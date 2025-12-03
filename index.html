@@ -63,3 +63,989 @@
     .block-img {
       width: 100%;
       height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 20px;
+    }
+
+    .image-stack-large {
+      height: 220px;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .image-stack-small {
+      height: 120px;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    /* NAV */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(246, 243, 238, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .logo {
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      font-size: 14px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-mark {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid var(--fg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 18px;
+      font-size: 14px;
+    }
+
+    .nav-links a {
+      opacity: 0.75;
+    }
+
+    .nav-links a:hover {
+      opacity: 1;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--fg);
+      font-size: 14px;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--fg);
+      color: #ffffff;
+      border-color: var(--fg);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+    }
+
+    .btn-outline:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    /* HERO */
+    .hero {
+      padding: 60px 0 46px;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
+      gap: 40px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 40px;
+      line-height: 1.1;
+      margin: 0 0 16px;
+    }
+
+    .hero-sub {
+      color: var(--muted);
+      max-width: 520px;
+      margin-bottom: 24px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .hero-note {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .hero-visual {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 12px;
+    }
+
+    .hero-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hero-card-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+
+    .hero-card-title {
+      font-weight: 600;
+    }
+
+    .hero-badge {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+
+    /* GENERIC SECTION */
+    section {
+      padding: 40px 0;
+    }
+
+    .section-heading {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+
+    .section-sub {
+      color: var(--muted);
+      max-width: 720px;
+      margin-bottom: 30px;
+    }
+
+    /* THREE COLUMN INFO */
+    .columns-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .info-card {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      font-size: 14px;
+    }
+
+    .info-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    /* GRID OF EXPERIENCES */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .exp-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .exp-title {
+      font-weight: 600;
+    }
+
+    .exp-link {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* FEATURED GRID */
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .feat-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+
+    .feat-body {
+      padding: 14px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .feat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    .feat-title {
+      font-weight: 600;
+    }
+
+    .feat-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* SPLIT SECTIONS */
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 36px;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.05);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .bullet-list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      font-size: 14px;
+    }
+
+    .bullet-list li::before {
+      content: "• ";
+    }
+
+    /* CARD ROWS */
+    .card-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .stay-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .stay-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .tag-pill {
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    /* MEMBERSHIP */
+    .tiers {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .tier-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tier-name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .tier-price {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .tier-list {
+      padding-left: 18px;
+      margin: 8px 0 0;
+      font-size: 13px;
+    }
+
+    /* EMAIL CAPTURE */
+    .email-block {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      padding: 22px 20px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+
+    .email-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    .email-input {
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      min-width: 220px;
+      max-width: 300px;
+      font-size: 14px;
+    }
+
+    .sub-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      padding-top: 26px;
+      margin-top: 40px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+
+    .footer-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--fg);
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      padding-top: 10px;
+      margin-top: 6px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .columns-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .grid-4,
+      .featured-grid,
+      .card-row,
+      .tiers,
+      .footer-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 0 16px 40px;
+      }
+      h1 {
+        font-size: 30px;
+      }
+      .columns-3,
+      .grid-4,
+      .featured-grid,
+      .card-row,
+      .tiers,
+      .footer-grid,
+      .split {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .hero {
+        padding-top: 40px;
+      }
+      .nav-inner {
+        padding-inline: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- NAV -->
+  <header class="nav">
+    <div class="nav-inner">
+      <div class="logo">
+        <div class="logo-mark">✓</div>
+        GUESTLIST GLOBAL
+      </div>
+      <nav class="nav-links">
+        <a href="#why">Why Sovereignty</a>
+        <a href="#paths">Paths</a>
+        <a href="#stays">Stays</a>
+        <a href="#sound">Sound</a>
+        <a href="#travel">Relocation</a>
+        <a href="#membership">Membership</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="#membership" class="btn btn-outline">Sign in</a>
+        <a href="#join" class="btn btn-primary">Join the Guestlist</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <div>
+        <div class="eyebrow">SOVEREIGNTY • OFF-GRID • SOUND • FOOD</div>
+        <h1>Experiences for people stepping out of the system.</h1>
+        <p class="hero-sub">
+          Guestlist Global is a curated access list for retreats, off-grid stays,
+          roots gatherings and sound journeys that support a sovereign, regenerative
+          way of life – for you, your family and your future.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="#join">Get on the sovereign guestlist</a>
+          <a class="btn btn-outline" href="#paths">Explore the paths →</a>
+        </div>
+        <div class="hero-note">
+          For off-grid dreamers, healers, roots music lovers, and families designing
+          life beyond the mainstream system.
+        </div>
+      </div>
+      <div>
+        <!-- HERO IMAGE -->
+        <img
+          src="/images/retreat-beach.jpg"
+          alt="Guests enjoying a conscious beach retreat at sunset"
+          class="hero-image"
+        />
+        <div class="hero-visual">
+          <div class="hero-card">
+            <div class="hero-card-label">RETREAT • SOVEREIGN HEALTH</div>
+            <div class="hero-card-title">Deep Healing & Thyroid Reset</div>
+            <div>Root-cause health, sound journeys, and sea air in one container.</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-card-label">STAY • OFF-GRID VILLA</div>
+            <div class="hero-card-title">Test Your Off-Grid Life</div>
+            <div>Live with solar, well water and farm-to-table food for a week.</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-card-label">SOUND • ONLINE & ISLAND</div>
+            <div class="hero-card-title">Frequency & Nervous System Reset</div>
+            <div>Sound baths, breath, meditation and integration circles.</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-card-label">ROOTS • COMMUNITY</div>
+            <div class="hero-card-title">Fire, Reggae & Long-Table Dinners</div>
+            <div>Real conversations, live music and shared food under the stars.</div>
+          </div>
+        </div>
+        <div class="hero-badge">
+          Sovereignty • Sound • Off-Grid • Regenerative Food
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY SOVEREIGN GUESTLIST -->
+    <section id="why">
+      <h2 class="section-heading">What is Guestlist Global?</h2>
+      <p class="section-sub">
+        Guestlist Global is a private guestlist for humans choosing sovereignty:
+        over their health, food, energy, water, education and community. We curate
+        retreats, residencies, sound journeys and gatherings that support you
+        to live more free – gently, steadily and with good people around you.
+      </p>
+      <div class="columns-3">
+        <div class="info-card">
+          <div class="info-title">Sovereignty first</div>
+          <div>
+            Every experience we list must support real sovereignty – from health
+            and nervous system regulation to land, food and water security.
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-title">Sound, roots & frequency</div>
+          <div>
+            We work with facilitators, musicians and spaces that understand
+            frequency, intention and culture – not just “wellness trends”.
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-title">Pathways, not one-offs</div>
+          <div>
+            Use Guestlist to test locations, build relationships, and slowly
+            design your move away from the system, at a pace that fits your life.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PATHS -->
+    <section id="paths">
+      <h2 class="section-heading">Choose your starting path</h2>
+      <p class="section-sub">
+        Whether you’re just sensing that something needs to change, or already
+        halfway off-grid, Guestlist Global curates experiences that help you move
+        from ideas into embodied, lived reality.
+      </p>
+      <div class="featured-grid">
+        <div class="feat-card">
+          <img
+            src="/images/retreat-beach.jpg"
+            alt="Beach retreat pathway"
+            class="feat-img"
+          />
+          <div class="feat-body">
+            <div class="feat-label">PATH 1 • HEAL & RESET</div>
+            <div class="feat-title">Sovereign Health & Nervous System</div>
+            <div>
+              Retreats and journeys focused on thyroid, hormones, stress and burnout, with
+              nutrition, somatics and sound woven together.
+            </div>
+            <div class="feat-note">Start here if your body is asking for help.</div>
+          </div>
+        </div>
+        <div class="feat-card">
+          <img
+            src="/images/sound-healing.jpg"
+            alt="Sound healing pathway"
+            class="feat-img"
+          />
+          <div class="feat-body">
+            <div class="feat-label">PATH 2 • FREQUENCY & COMMUNITY</div>
+            <div class="feat-title">Sound, Roots & Conscious Circles</div>
+            <div>
+              Online and in-person sound baths, roots gatherings, reggae nights
+              and long-table dinners that bring your people into your field.
+            </div>
+            <div class="feat-note">Start here if you need connection & resonance.</div>
+          </div>
+        </div>
+        <div class="feat-card">
+          <img
+            src="/images/travel-safari.jpg"
+            alt="Relocation and land scouting pathway"
+            class="feat-img"
+          />
+          <div class="feat-body">
+            <div class="feat-label">PATH 3 • LAND & LOCATION</div>
+            <div class="feat-title">Off-Grid Stays & Relocation Scouting</div>
+            <div>
+              Stays, residencies and travel experiences that let you test new lands
+              – from island life to farm communities – before making a move.
+            </div>
+            <div class="feat-note">Start here if you’re scouting your next home.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE CATEGORIES -->
+    <section>
+      <h2 class="section-heading">Experiences we curate onto the Guestlist</h2>
+      <p class="section-sub">
+        Everything listed under Guestlist Global is checked for sovereignty,
+        integrity and vibe. We avoid hype. We look for grounded hosts, real food,
+        and environments where your nervous system can actually exhale.
+      </p>
+      <div class="grid-4">
+        <div class="exp-card">
+          <div class="exp-title">Sovereign Health Retreats</div>
+          <div>
+            Deep-dive containers for thyroid, hormones, stress and burnout, with
+            nutrition, somatics and sound woven together.
+          </div>
+          <div class="exp-link">Explore retreats →</div>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title">Off-Grid Stays & Residencies</div>
+          <div>
+            Live for a while in solar-powered, water-secure, food-connected spaces
+            – and feel what real sovereignty might look like for you.
+          </div>
+          <div class="exp-link">Explore stays →</div>
+        </div>
+        <div class="exp-card" id="sound">
+          <div class="exp-title">Sound & Frequency Journeys</div>
+          <div>
+            Online and in-person journeys with crystal bowls, gongs, hand pan,
+            reggae, roots and medicine music.
+          </div>
+          <div class="exp-link">Explore sound →</div>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title">Roots Fires & Reggae Nights</div>
+          <div>
+            Beach fires, sound systems, acoustic sets and small gatherings with
+            people who care what they put in their ears and bodies.
+          </div>
+          <div class="exp-link">Roots gatherings →</div>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title">Regenerative Food Experiences</div>
+          <div>
+            Farm-to-table dinners, long-table suppers and kitchen takeovers with
+            chefs cooking from real soil and sea.
+          </div>
+          <div class="exp-link">Supper & soil →</div>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title">Family & Education Immersions</div>
+          <div>
+            Spaces to explore homeschooling, unschooling and community-led
+            education, with other conscious families.
+          </div>
+          <div class="exp-link">Family pathways →</div>
+        </div>
+        <div class="exp-card" id="stays">
+          <div class="exp-title">Test-Stays for Relocation</div>
+          <div>
+            Try on a new life for a week or a month – island, coastal or rural –
+            with support to explore land, schools and community.
+          </div>
+          <div class="exp-link">Test a new life →</div>
+        </div>
+        <div class="exp-card">
+          <div class="exp-title">Invite-Only Villa Sessions</div>
+          <div>
+            Small, high-integrity circles in villas and off-grid spaces where
+            you actually have time to meet and talk.
+          </div>
+          <div class="exp-link">Inner-circle sessions →</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOUND & ROOTS -->
+    <section id="sound">
+      <div class="split">
+        <div>
+          <div class="pill">SOUND • ROOTS • COMMUNITY</div>
+          <h2 class="section-heading">Sound, frequency and roots culture</h2>
+          <p class="section-sub">
+            Sound is one of the fastest ways to shift state – and one of the
+            most ancient. Guestlist Global weaves sound healing, roots music,
+            reggae culture and conscious gatherings into the journey out of
+            the system.
+          </p>
+          <ul class="bullet-list">
+            <li>Online sound baths and integration circles</li>
+            <li>In-person ceremonies on islands and in nature</li>
+            <li>Reggae and roots nights around fires and on the sand</li>
+            <li>Live acoustic sets at small, long-table suppers</li>
+          </ul>
+        </div>
+        <div>
+          <div class="image-stack-large">
+            <img
+              src="/images/sound-healing.jpg"
+              alt="Group sound healing session with singing bowls"
+              class="block-img"
+            />
+          </div>
+          <div class="image-stack-small">
+            <img
+              src="/images/secret-party.jpg"
+              alt="Invite-only beach or villa gathering at night"
+              class="block-img"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOD & SUPPER CLUBS -->
+    <section>
+      <div class="split">
+        <div>
+          <div class="pill">FOOD • FARM • TABLE</div>
+          <h2 class="section-heading">Real food, grown somewhere real</h2>
+          <p class="section-sub">
+            The journey out of the system runs through your plate. We connect
+            you with farms, chefs and supper clubs that care about soil, animals,
+            seed, water and the people eating at the table.
+          </p>
+          <ul class="bullet-list">
+            <li>Farm-to-table suppers with local growers and chefs</li>
+            <li>Workshops on growing, preserving and cooking real food</li>
+            <li>Family-friendly meals that kids actually want to eat</li>
+          </ul>
+        </div>
+        <div>
+          <div class="image-stack-large">
+            <img
+              src="/images/supper-club.jpg"
+              alt="Long-table supper club with conscious food and music"
+              class="block-img"
+            />
+          </div>
+          <div class="image-stack-small" style="margin-top:10px;">
+            <img
+              src="/images/travel-ocean.jpg"
+              alt="Ocean view near where food and community come together"
+              class="block-img"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRAVEL & RELOCATION -->
+    <section id="travel">
+      <div class="split">
+        <div>
+          <div class="pill">TRAVEL • RELOCATION • LAND</div>
+          <h2 class="section-heading">Scout your next chapter, one journey at a time</h2>
+          <p class="section-sub">
+            Maybe you’re not ready to “move” yet – but you are ready to look.
+            We curate travel experiences that combine rest, exploration and
+            practical scouting so you can feel into whether a land is for you.
+          </p>
+          <ul class="bullet-list">
+            <li>Island & coastal test-stays with local guides</li>
+            <li>Safari & sea combinations that include land and community visits</li>
+            <li>Slow-travel itineraries for families considering a move</li>
+          </ul>
+          <div style="margin-top:16px;">
+            <a class="btn btn-outline" href="#join">Plan a sovereign scouting trip</a>
+          </div>
+        </div>
+        <div>
+          <div class="image-stack-large">
+            <img
+              src="/images/travel-ocean.jpg"
+              alt="Island coastline with clear turquoise water"
+              class="block-img"
+            />
+          </div>
+          <div class="image-stack-small" style="margin-top:10px;">
+            <img
+              src="/images/travel-safari.jpg"
+              alt="Nature and wildlife for safari and wellness trips"
+              class="block-img"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMBERSHIP -->
+    <section id="membership">
+      <div class="pill">MEMBERSHIP</div>
+      <h2 class="section-heading">Join the sovereign guestlist</h2>
+      <p class="section-sub">
+        Guestlist Global is not a mass platform. It’s a curated list and a
+        community of people who are serious about changing how they live –
+        gently, practically and in connection with others.
+      </p>
+      <div class="tiers">
+        <div class="tier-card">
+          <div class="tier-name">Explorer</div>
+          <div class="tier-price">Free</div>
+          <ul class="tier-list">
+            <li>Monthly email with curated experiences</li>
+            <li>Open access to selected online sound journeys</li>
+            <li>Invites to some public gatherings and lives</li>
+          </ul>
+        </div>
+        <div class="tier-card">
+          <div class="tier-name">Member</div>
+          <div class="tier-price">Paid • Coming soon</div>
+          <ul class="tier-list">
+            <li>Priority access to retreats and test-stays</li>
+            <li>Member-only offers and pilot experiences</li>
+            <li>Priority for limited-capacity circles</li>
+          </ul>
+        </div>
+        <div class="tier-card">
+          <div class="tier-name">Inner Circle</div>
+          <div class="tier-price">By application</div>
+          <ul class="tier-list">
+            <li>Custom curation of retreats and stays</li>
+            <li>Support with long-term off-grid planning</li>
+            <li>Private villa sessions and closed circles</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMAIL SIGNUP -->
+    <section id="join">
+      <div class="email-block">
+        <h2 class="section-heading">Get on the sovereign Guestlist</h2>
+        <p class="section-sub" style="margin-inline:auto;">
+          Enter your email to receive a curated drop of retreats, journeys and
+          off-grid stays once or twice a month. No spam. No noise. Only things
+          that genuinely support your move out of the system.
+        </p>
+        <form class="email-form">
+          <input
+            class="email-input"
+            type="email"
+            placeholder="Enter your email"
+            required
+          />
+          <button class="btn btn-primary" type="submit">
+            Join the Guestlist
+          </button>
+        </form>
+        <div class="sub-note">
+          For sovereigns, healers, creatives, families and friends of the roots.
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-grid">
+        <div>
+          <div class="footer-title">Guestlist Global</div>
+          <div>
+            A curated guestlist for retreats, residencies, sound journeys and
+            gatherings that support sovereign, regenerative living.
+          </div>
+        </div>
+        <div>
+          <div class="footer-title">Explore</div>
+          <div class="footer-links">
+            <a href="#paths">Paths</a>
+            <a href="#stays">Stays & Residencies</a>
+            <a href="#sound">Sound & Roots</a>
+            <a href="#travel">Travel & Relocation</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer-title">For Hosts</div>
+          <div class="footer-links">
+            <span>Submit a retreat</span>
+            <span>List an off-grid stay</span>
+            <span>Partner with Guestlist</span>
+          </div>
+        </div>
+        <div>
+          <div class="footer-title">Connect</div>
+          <div class="footer-links">
+            <span>Twitter: @guestlist</span>
+            <span>Instagram (coming)</span>
+            <span>Email: hello@example.com</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>© Guestlist Global. All rights reserved.</div>
+        <div>
+          <span>Terms</span> • <span>Privacy</span>
+        </div>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

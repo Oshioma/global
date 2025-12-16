@@ -2,16 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Guestlist Network – Your Standing Travels With You</title>
+  <title>Guestlist Network</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      --bg: #f6f3ee;
-      --fg: #111111;
-      --muted: #666666;
-      --accent: #e0b15b;
-      --card-bg: #ffffff;
-      --border: #dddddd;
+      --bg: #0b0b0b;
+      --fg: #f6f3ee;
+      --muted: rgba(246, 243, 238, 0.72);
+      --line: rgba(246, 243, 238, 0.14);
     }
 
     * { box-sizing: border-box; }
@@ -21,768 +19,185 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--fg);
-      line-height: 1.6;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
     }
 
-    a { color: inherit; text-decoration: none; }
-
-    img { max-width: 100%; display: block; }
-
-    .page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px 60px;
+    .card {
+      width: min(980px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.02);
     }
 
-    /* NAV */
-    .nav {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(246, 243, 238, 0.96);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    .media {
+      position: relative;
+      height: 380px;
+      overflow: hidden;
     }
 
-    .nav-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
+    .media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(1.02);
+      filter: saturate(0.92) contrast(1.05);
     }
 
-    .logo {
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      font-size: 14px;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.08) 0%,
+        rgba(0,0,0,0.55) 62%,
+        rgba(0,0,0,0.84) 100%
+      );
     }
 
-    .logo-mark {
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      border: 2px solid var(--fg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 18px;
-      font-size: 14px;
-    }
-
-    .nav-links a { opacity: 0.75; }
-    .nav-links a:hover { opacity: 1; }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
+    .content {
+      padding: 22px 22px 26px;
+      display: grid;
       gap: 10px;
-      font-size: 14px;
+    }
+
+    .kicker {
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1.02;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 66ch;
+      line-height: 1.65;
+    }
+
+    .rule {
+      margin-top: 8px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--fg);
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 9px 18px;
+      padding: 10px 16px;
       border-radius: 999px;
-      border: 1px solid var(--fg);
+      border: 1px solid var(--line);
+      color: var(--fg);
+      text-decoration: none;
       font-size: 14px;
-      cursor: pointer;
-      background: transparent;
-      transition: all 0.18s ease;
-      white-space: nowrap;
+      transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .btn-primary {
+    .btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .btn.primary {
       background: var(--fg);
-      color: #ffffff;
+      color: #0b0b0b;
       border-color: var(--fg);
     }
 
-    .btn-primary:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
+    .btn.ghost {
+      background: rgba(255,255,255,0.03);
     }
 
-    .btn-outline:hover {
-      background: rgba(0, 0, 0, 0.04);
-    }
-
-    /* HERO */
-    .hero {
-      padding: 60px 0 40px;
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
-      gap: 40px;
-      align-items: center;
-    }
-
-    .eyebrow {
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    h1 {
-      font-size: 42px;
-      line-height: 1.08;
-      margin: 0 0 16px;
-    }
-
-    .hero-sub {
-      color: var(--muted);
-      max-width: 560px;
-      margin-bottom: 24px;
-    }
-
-    .hero-ctas {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-
-    .hero-note {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .hero-visual {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 12px;
-    }
-
-    .hero-card {
-      background: var(--card-bg);
-      border-radius: 20px;
-      padding: 14px;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .hero-card-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--muted);
-    }
-
-    .hero-card-title { font-weight: 600; }
-
-    .hero-badge {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: var(--muted);
-      margin-top: 16px;
-    }
-
-    .hero-image {
-      width: 100%;
-      height: 240px;
-      border-radius: 22px;
-      object-fit: cover;
-      margin-bottom: 12px;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.14);
-    }
-
-    /* GENERIC SECTION */
-    section { padding: 40px 0; }
-
-    .section-heading {
-      font-size: 26px;
-      margin-bottom: 10px;
-    }
-
-    .section-sub {
-      color: var(--muted);
-      max-width: 760px;
-      margin-bottom: 30px;
-    }
-
-    /* THREE COLUMN INFO */
-    .columns-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-    }
-
-    .info-card {
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 18px;
-      padding: 18px;
-      border: 1px solid rgba(0, 0, 0, 0.04);
-      font-size: 14px;
-    }
-
-    .info-title { font-weight: 600; margin-bottom: 6px; }
-
-    /* GRID OF EXPERIENCES */
-    .grid-4 {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .exp-card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      padding: 16px;
-      font-size: 14px;
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .exp-title { font-weight: 600; }
-    .exp-link { font-size: 13px; color: var(--muted); margin-top: 4px; }
-
-    /* FEATURED EXPERIENCES */
-    .featured-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-    }
-
-    .feat-card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      font-size: 14px;
-    }
-
-    .feat-body {
-      padding: 14px 16px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .feat-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--muted);
-    }
-
-    .feat-title { font-weight: 600; }
-    .feat-date { font-size: 12px; color: var(--muted); }
-
-    .feat-img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      display: block;
-    }
-
-    /* SPLIT SECTIONS */
-    .split {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 36px;
-      align-items: center;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: rgba(0, 0, 0, 0.05);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    .bullet-list {
-      list-style: none;
-      padding: 0;
-      margin: 12px 0 0;
-      font-size: 14px;
-    }
-
-    .bullet-list li::before { content: "• "; }
-
-    .image-stack-large,
-    .image-stack-small {
-      border-radius: 20px;
-      overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.06);
-      background: rgba(255,255,255,0.6);
-    }
-
-    .image-stack-large { height: 230px; margin-bottom: 12px; }
-    .image-stack-small { height: 130px; }
-
-    .block-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* MEMBERSHIP */
-    .tiers {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-    }
-
-    .tier-card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      border: 1px solid var(--border);
-      padding: 20px;
-      font-size: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .tier-name { font-weight: 600; font-size: 16px; }
-    .tier-price { font-size: 13px; color: var(--muted); }
-
-    .tier-list {
-      padding-left: 18px;
-      margin: 8px 0 0;
-      font-size: 13px;
-    }
-
-    /* EMAIL CAPTURE */
-    .email-block {
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 20px;
-      padding: 22px 20px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      text-align: center;
-    }
-
-    .email-form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 12px;
-    }
-
-    .email-input {
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      min-width: 220px;
-      max-width: 320px;
-      font-size: 14px;
-    }
-
-    .sub-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
-
-    /* FOOTER */
-    footer {
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
-      padding-top: 26px;
-      margin-top: 40px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 18px;
-    }
-
-    .footer-title { font-weight: 600; margin-bottom: 8px; color: var(--fg); }
-
-    .footer-links {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .footer-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
-      padding-top: 10px;
+    .foot {
       margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
     }
 
-    /* RESPONSIVE */
-    @media (max-width: 960px) {
-      .hero { grid-template-columns: minmax(0, 1fr); }
-      .hero-visual { order: 1; }
-      .columns-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .grid-4, .featured-grid, .tiers, .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .nav-links { display: none; }
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(246,243,238,0.35);
+      display: inline-block;
     }
 
     @media (max-width: 640px) {
-      .page { padding: 0 16px 40px; }
-      h1 { font-size: 32px; }
-      .columns-3, .grid-4, .featured-grid, .tiers, .footer-grid, .split { grid-template-columns: minmax(0, 1fr); }
-      .hero { padding-top: 40px; }
-      .nav-inner { padding-inline: 16px; }
-      .hero-image { height: 210px; }
+      body { padding: 16px; }
+      .media { height: 300px; }
+      h1 { font-size: 30px; }
+      .content { padding: 18px 16px 20px; }
     }
   </style>
 </head>
 
 <body>
-  <!-- NAV -->
-  <header class="nav">
-    <div class="nav-inner">
-      <div class="logo">
-        <div class="logo-mark">✓</div>
-        GUESTLIST NETWORK
+  <div class="card" role="main" aria-label="Guestlist Network">
+    <div class="media">
+      <img src="/images/secret-party.jpg" alt="A discreet, invite-only room" />
+      <div class="overlay" aria-hidden="true"></div>
+    </div>
+
+    <div class="content">
+      <div class="kicker">Guestlist Network</div>
+
+      <h1>Your standing travels with you.</h1>
+
+      <p>
+        A private access network for verified operators, creatives, and ranked individuals.
+        Guestlists, closed rooms, and trusted introductions across cities worldwide.
+      </p>
+
+      <div class="rule">By referral and application only.</div>
+
+      <div class="actions">
+        <a class="btn primary"
+           href="mailto:info@guestlist.net?subject=Guestlist%20Network%20%E2%80%93%20Application%20Request&body=Name:%0ACity:%0AIndustry/Role:%0AProof%20link(s):%0AReferral%20(if%20any):%0A">
+          Request application
+        </a>
+
+        <a class="btn ghost"
+           href="mailto:info@guestlist.net?subject=Guestlist%20Network%20%E2%80%93%20Host%20or%20Partner&body=Name:%0ACity:%0AType%20(venue/host/promoter/chef/etc):%0AWebsite/Proof:%0A">
+          Host / partner
+        </a>
       </div>
 
-      <nav class="nav-links">
-        <a href="#about">What it is</a>
-        <a href="#how">How it works</a>
-        <a href="#cities">Cities</a>
-        <a href="#membership">Membership</a>
-        <a href="#apply">Apply</a>
-      </nav>
-
-      <div class="nav-actions">
-        <a href="#membership" class="btn btn-outline">Member sign-in</a>
-        <a href="#apply" class="btn btn-primary">Apply for access</a>
+      <div class="foot">
+        <span>No guarantees.</span><span class="dot"></span>
+        <span>Host-first discretion.</span><span class="dot"></span>
+        <span>Small on purpose.</span>
       </div>
     </div>
-  </header>
-
-  <main class="page">
-    <!-- HERO -->
-    <section class="hero" id="top">
-      <div>
-        <div class="eyebrow">PRIVATE ACCESS • RECIPROCITY • DISCRETION</div>
-        <h1>Your standing travels with you.</h1>
-        <p class="hero-sub">
-          Guestlist Network is a private, application-only access network for people who already operate at a high level —
-          connecting trusted members to guestlists, closed rooms, and cultural events across cities worldwide.
-          Quietly. Properly.
-        </p>
-
-        <div class="hero-ctas">
-          <a class="btn btn-primary" href="#apply">Apply for Guestlist Network</a>
-          <a class="btn btn-outline" href="#about">See how it works →</a>
-        </div>
-
-        <div class="hero-note">
-          Not a party club. Not a mass platform. Access is contextual and never guaranteed.
-        </div>
-      </div>
-
-      <div>
-        <img class="hero-image" src="/images/retreat-beach.jpg" alt="A curated coastal setting" />
-
-        <div class="hero-visual">
-          <div class="hero-card">
-            <div class="hero-card-label">CLUB • INDUSTRY</div>
-            <div class="hero-card-title">Guestlist placements in key cities</div>
-            <div>Door decisions handled through relationships, not begging or blasting.</div>
-          </div>
-          <div class="hero-card">
-            <div class="hero-card-label">PRIVATE • INVITE ONLY</div>
-            <div class="hero-card-title">Closed rooms & off-calendar gatherings</div>
-            <div>The nights you don’t find on public listings.</div>
-          </div>
-          <div class="hero-card">
-            <div class="hero-card-label">CULTURE • FOOD</div>
-            <div class="hero-card-title">Supper clubs & cultural salons</div>
-            <div>Small tables, high signal, real conversation.</div>
-          </div>
-          <div class="hero-card">
-            <div class="hero-card-label">TRAVEL • SOFT LANDINGS</div>
-            <div class="hero-card-title">Introductions when you travel</div>
-            <div>Trusted local connectors — no awkward cold entry.</div>
-          </div>
-        </div>
-
-        <div class="hero-badge">
-          London • Ibiza • Berlin • NYC • Dubai • Johannesburg • Zanzibar (and growing)
-        </div>
-      </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="about">
-      <h2 class="section-heading">What is Guestlist Network?</h2>
-      <p class="section-sub">
-        Guestlist Network is a reciprocal access network. If you’re already verified as top-tier in your domain —
-        a leading venue operator, resident, booker, ranked athlete, respected creative, or cultural operator —
-        your standing can unlock access in other cities and scenes.
-      </p>
-
-      <div class="columns-3">
-        <div class="info-card">
-          <div class="info-title">Reputational, not transactional</div>
-          <div>
-            Payment keeps membership active; it does not buy entry. Access is contextual, discreet, and host-first.
-          </div>
-        </div>
-        <div class="info-card">
-          <div class="info-title">Small by design</div>
-          <div>
-            Guestlist stays valuable by staying selective. Low acceptance rates. Quiet operations. High trust.
-          </div>
-        </div>
-        <div class="info-card">
-          <div class="info-title">A passport between scenes</div>
-          <div>
-            Your credibility in one room becomes a bridge into others — without clout-chasing or noise.
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section id="how">
-      <h2 class="section-heading">How it works</h2>
-      <p class="section-sub">
-        Guestlist Network runs on verification, discretion, and relationships. We don’t publish public calendars,
-        we don’t promise “anywhere, anytime”, and we don’t operate like ticketing.
-      </p>
-
-      <div class="grid-4">
-        <div class="exp-card">
-          <div class="exp-title">1) Apply</div>
-          <div>Submit your role, standing, and basic proof. Referrals are strongest.</div>
-          <div class="exp-link">Application-only →</div>
-        </div>
-        <div class="exp-card">
-          <div class="exp-title">2) Verify</div>
-          <div>We confirm relevance and fit. Followers aren’t primary evidence.</div>
-          <div class="exp-link">Standards-first →</div>
-        </div>
-        <div class="exp-card">
-          <div class="exp-title">3) Activate</div>
-          <div>Approved members receive membership + access request instructions.</div>
-          <div class="exp-link">Quiet onboarding →</div>
-        </div>
-        <div class="exp-card">
-          <div class="exp-title">4) Place</div>
-          <div>Requests are handled case-by-case with host-first discretion.</div>
-          <div class="exp-link">Contextual access →</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FEATURED (VISUAL STORY) -->
-    <section id="cities">
-      <h2 class="section-heading">What access looks like</h2>
-      <p class="section-sub">
-        A few examples of the kinds of placements and cultural rooms members access — across nights out,
-        private gatherings, and soft landings when travelling.
-      </p>
-
-      <div class="featured-grid">
-        <div class="feat-card">
-          <img class="feat-img" src="/images/secret-party.jpg" alt="Invite-only party" />
-          <div class="feat-body">
-            <div class="feat-label">PRIVATE • INVITE ONLY</div>
-            <div class="feat-title">Closed rooms</div>
-            <div>Invite-only gatherings with a carefully curated crowd.</div>
-            <div class="feat-date">Access is never guaranteed</div>
-          </div>
-        </div>
-
-        <div class="feat-card">
-          <img class="feat-img" src="/images/supper-club.jpg" alt="Supper club" />
-          <div class="feat-body">
-            <div class="feat-label">CULTURE • FOOD</div>
-            <div class="feat-title">Supper clubs & salons</div>
-            <div>Small tables, trusted guests, high-signal conversation.</div>
-            <div class="feat-date">Limited seats • high standards</div>
-          </div>
-        </div>
-
-        <div class="feat-card">
-          <img class="feat-img" src="/images/travel-ocean.jpg" alt="Travel and coastal city" />
-          <div class="feat-body">
-            <div class="feat-label">TRAVEL • SOFT LANDINGS</div>
-            <div class="feat-title">Introductions in new cities</div>
-            <div>Local connectors, door support, and the right rooms for you.</div>
-            <div class="feat-date">Host-first always</div>
-          </div>
-        </div>
-      </div>
-
-      <p class="exp-link" style="margin-top:14px;">
-        Built city-by-city through trusted connectors →
-      </p>
-    </section>
-
-    <!-- WHO IT'S FOR (SPLIT) -->
-    <section>
-      <div class="split">
-        <div>
-          <div class="pill">WHO IT’S FOR</div>
-          <h2 class="section-heading">Verified operators, not aspirants</h2>
-          <p class="section-sub">
-            Guestlist Network is for people who already have standing. Examples:
-          </p>
-          <ul class="bullet-list">
-            <li>Senior staff, bookers, residents, operators at top venues</li>
-            <li>Recognised creatives (DJs, artists, chefs) with proven relevance</li>
-            <li>Ranked or sponsored athletes</li>
-            <li>Cultural connectors with strong real-world credibility</li>
-          </ul>
-          <div style="margin-top:16px;">
-            <a class="btn btn-outline" href="#apply">See criteria & apply</a>
-          </div>
-        </div>
-
-        <div>
-          <div class="image-stack-large">
-            <img class="block-img" src="/images/travel-safari.jpg" alt="Travel and access across scenes" />
-          </div>
-          <div class="image-stack-small">
-            <img class="block-img" src="/images/sound-healing.jpg" alt="Quiet cultural room" />
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MEMBERSHIP -->
-    <section id="membership">
-      <div class="pill">MEMBERSHIP</div>
-      <h2 class="section-heading">Membership stays small</h2>
-      <p class="section-sub">
-        One tier. Clear standards. Quiet operations. Access is contextual and host-first.
-        Membership grants eligibility for access, not entitlement to outcomes.
-      </p>
-
-      <div class="tiers">
-        <div class="tier-card">
-          <div class="tier-name">Member</div>
-          <div class="tier-price">£75 / month • Application-only</div>
-          <ul class="tier-list">
-            <li>Eligibility for guestlist placements</li>
-            <li>Access requests handled case-by-case</li>
-            <li>Introductions via trusted local connectors</li>
-            <li>Invites to closed rooms when aligned</li>
-          </ul>
-        </div>
-
-        <div class="tier-card">
-          <div class="tier-name">Annual</div>
-          <div class="tier-price">£750 / year • 2 months included</div>
-          <ul class="tier-list">
-            <li>Everything in monthly membership</li>
-            <li>Best for frequent travellers</li>
-            <li>Higher priority consideration (still contextual)</li>
-            <li>Quiet city updates & access drops</li>
-          </ul>
-        </div>
-
-        <div class="tier-card">
-          <div class="tier-name">Founding</div>
-          <div class="tier-price">Invite-only • Limited, capped</div>
-          <ul class="tier-list">
-            <li>Early membership recognition</li>
-            <li>Referral allocation (limited)</li>
-            <li>Help seed a city (if relevant)</li>
-            <li>Standards protection</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- APPLY -->
-    <section id="apply">
-      <div class="email-block">
-        <h2 class="section-heading">Apply for Guestlist Network</h2>
-        <p class="section-sub" style="margin-inline:auto;">
-          Leave your email and we’ll send the application. Applications are reviewed weekly.
-          Not all applications are accepted.
-        </p>
-
-        <form class="email-form" onsubmit="return false;">
-          <input class="email-input" type="email" placeholder="Enter your email" required />
-          <button class="btn btn-primary" type="submit">Request application</button>
-        </form>
-
-        <div class="sub-note">
-          Tip: Referrals and verifiable standing are the fastest path to approval.
-        </div>
-      </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-      <div class="footer-grid">
-        <div>
-          <div class="footer-title">Guestlist Network</div>
-          <div>
-            A private, reciprocal access network. Quiet by design.
-            Host-first, standards-first, small on purpose.
-          </div>
-        </div>
-
-        <div>
-          <div class="footer-title">Explore</div>
-          <div class="footer-links">
-            <a href="#about">What it is</a>
-            <a href="#how">How it works</a>
-            <a href="#membership">Membership</a>
-            <a href="#apply">Apply</a>
-          </div>
-        </div>
-
-        <div>
-          <div class="footer-title">Standards</div>
-          <div class="footer-links">
-            <span>Application-only</span>
-            <span>Low acceptance rate</span>
-            <span>Access not guaranteed</span>
-            <span>Discretion always</span>
-          </div>
-        </div>
-
-        <div>
-          <div class="footer-title">Connect</div>
-          <div class="footer-links">
-            <span>X: @guestlist</span>
-            <span>Email: hello@example.com</span>
-            <span>Instagram (optional)</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <div>© Guestlist Network. All rights reserved.</div>
-        <div><span>Terms</span> • <span>Privacy</span></div>
-      </div>
-    </footer>
-  </main>
+  </div>
 </body>
 </html>

@@ -26,6 +26,8 @@
       padding: 24px;
     }
 
+    a { color: inherit; }
+
     .card {
       width: min(980px, 100%);
       border: 1px solid var(--line);
@@ -86,7 +88,7 @@
       margin: 0;
       color: var(--muted);
       font-size: 15px;
-      max-width: 66ch;
+      max-width: 70ch;
       line-height: 1.65;
     }
 
@@ -162,6 +164,61 @@
       display: inline-block;
     }
 
+    /* ADDED: compact explainer blocks */
+    .linkline {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .linkline a {
+      color: var(--fg);
+      text-decoration: underline;
+      text-decoration-color: rgba(246,243,238,0.35);
+      text-underline-offset: 4px;
+    }
+
+    .divider {
+      border-top: 1px solid var(--line);
+      margin-top: 18px;
+      padding-top: 18px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .mini-title {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--fg);
+      margin: 0 0 6px;
+    }
+
+    .mini-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 60ch;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 960px) {
+      .mini-grid { grid-template-columns: 1fr; }
+    }
+
     @media (max-width: 640px) {
       body { padding: 16px; }
       .media { height: 300px; }
@@ -173,7 +230,7 @@
 
 <body>
   <main class="card" aria-label="Guestlist Network">
-    
+
     <!-- HERO IMAGE -->
     <div class="media">
       <img src="/images/hero.jpg" alt="A single flower in low light, representing discretion, rarity, and select access" />
@@ -208,13 +265,55 @@
         </a>
       </div>
 
+      <div class="linkline">
+        <a href="#how">How it works</a> · <a href="#access">What access looks like</a>
+      </div>
+
       <div class="foot">
         <span>No guarantees.</span><span class="dot"></span>
         <span>Host-first discretion.</span><span class="dot"></span>
         <span>Small on purpose.</span>
       </div>
-    </div>
 
+      <!-- HOW IT WORKS -->
+      <div class="divider" id="how">
+        <div class="kicker">How it works</div>
+        <div class="mini-grid">
+          <div class="mini-card">
+            <p class="mini-title">1) Apply</p>
+            <p class="mini-text">Submit your role, city, and proof of standing. Referrals carry weight.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">2) Verify</p>
+            <p class="mini-text">We assess relevance and fit. Followers are not primary evidence.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">3) Place</p>
+            <p class="mini-text">Access requests are handled case-by-case. Host-first, always.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- WHAT ACCESS LOOKS LIKE -->
+      <div class="divider" id="access">
+        <div class="kicker">What access looks like</div>
+        <div class="mini-grid">
+          <div class="mini-card">
+            <p class="mini-title">Closed Rooms</p>
+            <p class="mini-text">Invite-only gatherings and off-calendar nights. Discreet by design.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">Guestlist Placements</p>
+            <p class="mini-text">Door support via relationships in select cities — never guaranteed.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">Soft Landings</p>
+            <p class="mini-text">Introductions to trusted locals when you travel — no cold entry.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </main>
 </body>
 </html>

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Guestlist Network</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     :root {
       --bg: #0b0b0b;
@@ -33,6 +34,7 @@
       background: rgba(255, 255, 255, 0.02);
     }
 
+    /* HERO IMAGE */
     .media {
       position: relative;
       height: 380px;
@@ -45,7 +47,7 @@
       object-fit: cover;
       display: block;
       transform: scale(1.02);
-      filter: saturate(0.92) contrast(1.05);
+      filter: saturate(0.9) contrast(1.05);
     }
 
     .overlay {
@@ -53,12 +55,13 @@
       inset: 0;
       background: linear-gradient(
         180deg,
-        rgba(0,0,0,0.08) 0%,
-        rgba(0,0,0,0.55) 62%,
-        rgba(0,0,0,0.84) 100%
+        rgba(0,0,0,0.05) 0%,
+        rgba(0,0,0,0.55) 65%,
+        rgba(0,0,0,0.82) 100%
       );
     }
 
+    /* CONTENT */
     .content {
       padding: 22px 22px 26px;
       display: grid;
@@ -93,6 +96,15 @@
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--fg);
+      line-height: 1.6;
+    }
+
+    .rule span {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 4px;
     }
 
     .actions {
@@ -113,8 +125,7 @@
       color: var(--fg);
       text-decoration: none;
       font-size: 14px;
-      transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
-      user-select: none;
+      transition: transform 0.16s ease, opacity 0.16s ease;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -137,7 +148,6 @@
       margin-top: 6px;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.55;
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
@@ -162,12 +172,15 @@
 </head>
 
 <body>
-  <div class="card" role="main" aria-label="Guestlist Network">
+  <main class="card" aria-label="Guestlist Network">
+    
+    <!-- HERO IMAGE -->
     <div class="media">
-      <img src="/images/secret-party.jpg" alt="A discreet, invite-only room" />
+      <img src="/images/hero.jpg" alt="A single flower in low light, representing discretion, rarity, and select access" />
       <div class="overlay" aria-hidden="true"></div>
     </div>
 
+    <!-- CONTENT -->
     <div class="content">
       <div class="kicker">Guestlist Network</div>
 
@@ -178,16 +191,19 @@
         Guestlists, closed rooms, and trusted introductions across cities worldwide.
       </p>
 
-      <div class="rule">By referral and application only.</div>
+      <div class="rule">
+        By referral and application only.
+        <span>Operating quietly across select cities.</span>
+      </div>
 
       <div class="actions">
         <a class="btn primary"
-           href="mailto:info@guestlist.net?subject=Guestlist%20Network%20%E2%80%93%20Application%20Request&body=Name:%0ACity:%0AIndustry/Role:%0AProof%20link(s):%0AReferral%20(if%20any):%0A">
+           href="mailto:info@guestlist.net?subject=Guestlist%20Network%20–%20Application%20Request&body=Name:%0ACity:%0AIndustry/Role:%0AProof%20link(s):%0AReferral%20(if%20any):%0A">
           Request application
         </a>
 
         <a class="btn ghost"
-           href="mailto:info@guestlist.net?subject=Guestlist%20Network%20%E2%80%93%20Host%20or%20Partner&body=Name:%0ACity:%0AType%20(venue/host/promoter/chef/etc):%0AWebsite/Proof:%0A">
+           href="mailto:info@guestlist.net?subject=Guestlist%20Network%20–%20Host%20or%20Partner&body=Name:%0ACity:%0AType%20(venue/host/operator/etc):%0AWebsite/Proof:%0A">
           Host / partner
         </a>
       </div>
@@ -198,6 +214,7 @@
         <span>Small on purpose.</span>
       </div>
     </div>
-  </div>
+
+  </main>
 </body>
 </html>

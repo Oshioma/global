@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Guestlist — Referral Only</title>
+  <title>Guestlist — By referral only</title>
   <meta name="description" content="Guestlist operates privately across select cities. Access is granted by referral only." />
-  <meta name="robots" content="index,follow" />
   <link rel="icon" href="/favicon.ico" />
 
   <style>
@@ -18,24 +17,23 @@
       --card:rgba(255,255,255,.04);
       --card2:rgba(255,255,255,.02);
       --radius:18px;
-      --max:980px;
+      --max:1040px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      background: radial-gradient(1000px 600px at 70% 10%, rgba(255,255,255,.06), transparent 60%),
-                  radial-gradient(800px 500px at 20% 20%, rgba(255,255,255,.04), transparent 55%),
-                  var(--bg);
+      background: var(--bg);
       color:var(--fg);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       letter-spacing:.2px;
     }
     a{color:inherit; text-decoration:none}
-    .wrap{max-width:var(--max); margin:0 auto; padding:28px 18px 90px}
+    .wrap{max-width:var(--max); margin:0 auto; padding:26px 18px 80px}
+
     header{
       display:flex; align-items:center; justify-content:space-between;
-      padding:10px 0 30px;
+      padding:8px 0 18px;
     }
     .brand{
       display:flex; align-items:center; gap:10px;
@@ -52,84 +50,106 @@
     }
 
     .hero{
-      padding:52px 0 22px;
-      border-top:1px solid var(--line);
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:28px;
+      overflow:hidden;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.88)),
+        url('/hero.jpg') center/cover no-repeat;
     }
+    .heroInner{
+      padding:56px 20px 24px;
+    }
+    @media (min-width: 860px){
+      .heroInner{padding:74px 34px 30px}
+    }
+
     h1{
       margin:0 0 14px;
-      font-size:40px;
-      line-height:1.05;
+      font-size:42px;
+      line-height:1.03;
       font-weight:650;
       letter-spacing:-.8px;
+      text-shadow: 0 10px 40px rgba(0,0,0,.55);
     }
+    @media (min-width: 860px){
+      h1{font-size:52px}
+    }
+
     .sub{
-      margin:0 0 26px;
-      color:var(--muted);
-      max-width:62ch;
+      margin:0 0 22px;
+      color:rgba(234,234,234,.82);
+      max-width:64ch;
       font-size:15px;
-      line-height:1.55;
+      line-height:1.6;
+      text-shadow: 0 10px 40px rgba(0,0,0,.55);
     }
     .sub strong{color:var(--fg); font-weight:600}
+
     .gate{
       margin-top:18px;
-      padding:20px;
+      padding:18px;
       border:1px solid var(--line);
       border-radius:var(--radius);
-      background: linear-gradient(180deg, var(--card), var(--card2));
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      max-width:520px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      max-width:560px;
+      backdrop-filter: blur(6px);
     }
     .gate label{
-      color:var(--muted);
+      display:block;
+      color:rgba(234,234,234,.7);
       font-size:12px;
       letter-spacing:1.2px;
       text-transform:uppercase;
+      margin:0 0 10px;
     }
-    .row{
-      display:flex; gap:10px; align-items:center;
-    }
+    .row{display:flex; gap:10px; align-items:center}
     input{
       flex:1;
       height:44px;
       border-radius:12px;
       border:1px solid var(--line);
-      background: rgba(0,0,0,.25);
+      background: rgba(0,0,0,.28);
       color:var(--fg);
       padding:0 12px;
       outline:none;
       font-size:14px;
     }
-    input::placeholder{color:rgba(234,234,234,.35)}
+    input::placeholder{color:rgba(234,234,234,.38)}
     button{
       height:44px;
       padding:0 14px;
       border-radius:12px;
       border:1px solid var(--line);
-      background: rgba(255,255,255,.06);
+      background: rgba(255,255,255,.08);
       color:var(--fg);
       cursor:pointer;
       font-size:13px;
       letter-spacing:.3px;
+      white-space:nowrap;
     }
-    button:hover{background: rgba(255,255,255,.09)}
+    button:hover{background: rgba(255,255,255,.12)}
     .resp{
+      margin-top:10px;
       min-height:18px;
-      color:var(--muted);
+      color:rgba(234,234,234,.72);
       font-size:13px;
       line-height:1.35;
     }
 
+    .below{
+      padding:22px 2px 0;
+    }
+
     .grid{
-      margin-top:34px;
+      margin-top:18px;
       display:grid;
       grid-template-columns: 1fr;
       gap:12px;
     }
     @media (min-width: 860px){
       .grid{grid-template-columns: 1fr 1fr}
-      h1{font-size:46px}
     }
     .card{
       padding:18px;
@@ -151,13 +171,12 @@
       line-height:1.6;
       color:var(--fg);
       opacity:.95;
-      max-width:64ch;
+      max-width:66ch;
     }
     .card p span{color:var(--muted)}
-    .divider{margin:34px 0; border-top:1px solid var(--line)}
     footer{
-      margin-top:34px;
-      padding-top:18px;
+      margin-top:26px;
+      padding-top:16px;
       border-top:1px solid var(--line);
       display:flex;
       justify-content:space-between;
@@ -177,123 +196,91 @@
       <div class="topline">Operating quietly across select cities</div>
     </header>
 
-    <main class="hero" aria-label="Guestlist home">
-      <h1>By referral only.</h1>
-      <p class="sub">
-        Guestlist is a private network for curated experiences, people, and places.
-        <strong>There is no public membership.</strong>
-      </p>
-
-      <section class="gate" aria-label="Referral gate">
-        <label for="ref">Referral code</label>
-        <div class="row">
-          <input id="ref" name="ref" type="text" placeholder="Enter referral" autocomplete="off" spellcheck="false" />
-          <button id="go" type="button">Continue</button>
-        </div>
-        <div class="resp" id="resp"></div>
-      </section>
-
-      <div class="grid" aria-label="Details">
-        <section class="card">
-          <h2>How it works</h2>
-          <p>
-            Referral codes are issued quietly.<br>
-            <span>Codes may expire, be limited by city, or be revoked without notice.</span>
-          </p>
-        </section>
-
-        <section class="card">
-          <h2>What access looks like</h2>
-          <p>
-            Private listings. Limited invitations. Small rooms.<br>
-            <span>Not everything is advertised. Not everything is for everyone.</span>
-          </p>
-        </section>
-
-        <section class="card">
-          <h2>What this is not</h2>
-          <p>
-            Not a ticket marketplace. Not a newsletter. Not a public directory.<br>
-            <span>We don’t optimise for reach. We optimise for signal.</span>
-          </p>
-        </section>
-
-        <section class="card">
-          <h2>Conduct</h2>
-          <p>
-            Discretion is the baseline. Respect hosts and spaces.<br>
-            <span>Access is a privilege. It can be removed.</span>
-          </p>
-        </section>
-      </div>
-
-      <div class="divider"></div>
-
-      <section class="card" aria-label="Note">
-        <h2>Note</h2>
-        <p>
-          Guestlist operates privately. Submissions, codes, and access are reviewed periodically.
-          <span>We do not respond to requests for access without a referral.</span>
+    <section class="hero" aria-label="Hero">
+      <div class="heroInner">
+        <h1>By referral only.</h1>
+        <p class="sub">
+          Guestlist is a private network for curated experiences, people, and places.
+          <strong>There is no public membership.</strong>
         </p>
-      </section>
 
-      <footer>
-        <div class="small">
-          Guestlist — private access.<br>
-          By referral only.
+        <!-- One-field gate (no referral codes) -->
+        <!-- Replace FORM_ENDPOINT with your form provider endpoint (Formspree/Basin/etc.) -->
+        <form class="gate" id="gate" action="FORM_ENDPOINT" method="POST">
+          <label for="email">Request access</label>
+          <div class="row">
+            <input id="email" name="email" type="email" placeholder="Email" required autocomplete="email" />
+            <button type="submit">Request</button>
+          </div>
+
+          <!-- Optional hidden fields for clean inbox labeling -->
+          <input type="hidden" name="source" value="clubguestlists.com" />
+          <input type="hidden" name="type" value="access-request" />
+
+          <div class="resp" id="resp"></div>
+        </form>
+
+        <div class="below">
+          <div class="grid" aria-label="Details">
+            <section class="card">
+              <h2>How it works</h2>
+              <p>
+                Access is granted privately.<br>
+                <span>Requests are reviewed periodically. No public waiting list.</span>
+              </p>
+            </section>
+
+            <section class="card">
+              <h2>What access looks like</h2>
+              <p>
+                Private listings. Limited invitations. Small rooms.<br>
+                <span>Not everything is advertised. Not everything is for everyone.</span>
+              </p>
+            </section>
+
+            <section class="card">
+              <h2>What this is not</h2>
+              <p>
+                Not a ticket marketplace. Not a newsletter. Not a public directory.<br>
+                <span>We don’t optimise for reach. We optimise for signal.</span>
+              </p>
+            </section>
+
+            <section class="card">
+              <h2>Conduct</h2>
+              <p>
+                Discretion is the baseline. Respect hosts and spaces.<br>
+                <span>Access is a privilege. It can be removed.</span>
+              </p>
+            </section>
+          </div>
+
+          <footer>
+            <div class="small">
+              Guestlist — private access.<br>
+              By referral only.
+            </div>
+            <div class="contact">
+              Contact: <a href="mailto:info@guestlist.net">info@guestlist.net</a>
+            </div>
+          </footer>
         </div>
-        <div class="contact">
-          Contact: <a href="mailto:info@guestlist.net">info@guestlist.net</a>
-        </div>
-      </footer>
-    </main>
+      </div>
+    </section>
   </div>
 
   <script>
+    // Cold confirmation (no redirect, no fanfare)
+    const form = document.getElementById('gate');
     const resp = document.getElementById('resp');
-    const input = document.getElementById('ref');
-    const btn = document.getElementById('go');
 
-    function setMsg(t){ resp.textContent = t || ''; }
-
-    async function submitCode(){
-      const code = (input.value || '').trim();
-      if(!code){ setMsg(''); return; }
-
-      btn.disabled = true;
-      setMsg('…');
-
-      try{
-        const r = await fetch('/api/referral', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ code })
-        });
-
-        // Always handle as JSON. Your API should return:
-        // { ok: true, message: "Accepted." } or { ok: false, message: "This referral is not recognised." }
-        const data = await r.json().catch(() => null);
-
-        if(data && typeof data.message === 'string'){
-          setMsg(data.message);
-        } else {
-          setMsg('This referral is not recognised.');
-        }
-      } catch(e){
-        // Keep it cold: do not expose errors.
-        setMsg('This referral is not recognised.');
-      } finally {
-        btn.disabled = false;
-      }
+    if (form && resp) {
+      form.addEventListener('submit', () => {
+        // Many form providers redirect by default.
+        // This message will show briefly; if you want no redirect, pick a provider that supports AJAX.
+        resp.textContent = 'Received.';
+      });
     }
-
-    btn.addEventListener('click', submitCode);
-    input.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        submitCode();
-      }
-    });
   </script>
 </body>
 </html>

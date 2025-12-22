@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Guestlist — By referral only</title>
-  <meta name="description" content="Guestlist operates privately across select cities. Access is granted by referral only." />
+  <title>Guestlist — Access is restricted</title>
+  <meta name="description" content="Guestlist operates privately across select cities. There is no public membership. Access is granted only through trusted referrals." />
   <link rel="icon" href="/favicon.ico" />
 
   <style>
@@ -14,6 +14,7 @@
       --muted:#a8a8a8;
       --faint:#6f6f6f;
       --line:rgba(255,255,255,.10);
+      --line2:rgba(255,255,255,.07);
       --card:rgba(255,255,255,.04);
       --card2:rgba(255,255,255,.02);
       --radius:18px;
@@ -49,57 +50,88 @@
       font-size:11px;
     }
 
+    /* HERO */
     .hero{
       margin-top:10px;
       border:1px solid var(--line);
       border-radius:28px;
       overflow:hidden;
       background:
-        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.88)),
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.90)),
         url('/hero.jpg') center/cover no-repeat;
     }
     .heroInner{
-      padding:56px 20px 24px;
+      padding:58px 20px 28px;
     }
     @media (min-width: 860px){
-      .heroInner{padding:74px 34px 30px}
+      .heroInner{padding:78px 34px 34px}
     }
 
     h1{
       margin:0 0 14px;
-      font-size:42px;
-      line-height:1.03;
+      font-size:44px;
+      line-height:1.02;
       font-weight:650;
-      letter-spacing:-.8px;
-      text-shadow: 0 10px 40px rgba(0,0,0,.55);
+      letter-spacing:-.9px;
+      text-shadow: 0 10px 45px rgba(0,0,0,.6);
     }
     @media (min-width: 860px){
-      h1{font-size:52px}
+      h1{font-size:56px}
     }
 
     .sub{
-      margin:0 0 22px;
+      margin:0 0 20px;
       color:rgba(234,234,234,.82);
-      max-width:64ch;
+      max-width:68ch;
       font-size:15px;
       line-height:1.6;
-      text-shadow: 0 10px 40px rgba(0,0,0,.55);
+      text-shadow: 0 10px 45px rgba(0,0,0,.6);
     }
     .sub strong{color:var(--fg); font-weight:600}
 
-    .gate{
+    /* "Administrative" details link (form is hidden by default) */
+    .detailsWrap{
       margin-top:18px;
-      padding:18px;
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      max-width:560px;
-      backdrop-filter: blur(6px);
+      max-width:640px;
+    }
+    .reveal{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line2);
+      background: rgba(0,0,0,.20);
+      color: rgba(234,234,234,.62);
+      font-size:12px;
+      letter-spacing:1.1px;
+      text-transform:uppercase;
+      cursor:pointer;
+      user-select:none;
+    }
+    .reveal:hover{
+      border-color: rgba(255,255,255,.12);
+      color: rgba(234,234,234,.72);
+    }
+    .reveal .chev{opacity:.7}
+
+    /* Backgrounded form */
+    .gate{
+      margin-top:10px;
+      padding:14px 14px 12px;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      background: rgba(0,0,0,.22);
+      max-width:520px;
+
+      /* visually pushed back */
+      opacity:.75;
+      filter:saturate(.9);
     }
     .gate label{
       display:block;
-      color:rgba(234,234,234,.7);
-      font-size:12px;
+      color:rgba(234,234,234,.55);
+      font-size:11px;
       letter-spacing:1.2px;
       text-transform:uppercase;
       margin:0 0 10px;
@@ -107,41 +139,48 @@
     .row{display:flex; gap:10px; align-items:center}
     input{
       flex:1;
-      height:44px;
+      height:40px;
       border-radius:12px;
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.08);
       background: rgba(0,0,0,.28);
-      color:var(--fg);
+      color:rgba(234,234,234,.9);
       padding:0 12px;
       outline:none;
-      font-size:14px;
-    }
-    input::placeholder{color:rgba(234,234,234,.38)}
-    button{
-      height:44px;
-      padding:0 14px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.08);
-      color:var(--fg);
-      cursor:pointer;
       font-size:13px;
-      letter-spacing:.3px;
+    }
+    input::placeholder{color:rgba(234,234,234,.26)}
+    button{
+      height:40px;
+      padding:0 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.06);
+      color:rgba(234,234,234,.85);
+      cursor:pointer;
+      font-size:12px;
+      letter-spacing:.4px;
+      text-transform:uppercase;
       white-space:nowrap;
     }
-    button:hover{background: rgba(255,255,255,.12)}
+    button:hover{background: rgba(255,255,255,.09)}
     .resp{
       margin-top:10px;
       min-height:18px;
-      color:rgba(234,234,234,.72);
-      font-size:13px;
+      color:rgba(234,234,234,.62);
+      font-size:12.5px;
       line-height:1.35;
     }
-
-    .below{
-      padding:22px 2px 0;
+    .note{
+      margin-top:10px;
+      color:rgba(234,234,234,.55);
+      font-size:12.5px;
+      line-height:1.45;
+      max-width:66ch;
     }
+    .note strong{color:rgba(234,234,234,.78); font-weight:600}
 
+    /* CONTENT GRID */
+    .below{padding:22px 2px 0}
     .grid{
       margin-top:18px;
       display:grid;
@@ -169,8 +208,7 @@
       margin:0;
       font-size:14px;
       line-height:1.6;
-      color:var(--fg);
-      opacity:.95;
+      color:rgba(234,234,234,.92);
       max-width:66ch;
     }
     .card p span{color:var(--muted)}
@@ -186,6 +224,16 @@
     }
     .small{font-size:12px; color:var(--faint); line-height:1.5}
     .contact{font-size:12px; color:var(--muted)}
+    .footnote{
+      margin-top:10px;
+      font-size:12px;
+      color:rgba(234,234,234,.42);
+      line-height:1.5;
+      max-width:72ch;
+    }
+
+    /* Hidden state for the gate */
+    .hidden{display:none}
   </style>
 </head>
 
@@ -198,35 +246,51 @@
 
     <section class="hero" aria-label="Hero">
       <div class="heroInner">
-        <h1>By referral only.</h1>
+        <h1>Access is restricted.</h1>
         <p class="sub">
-          Guestlist is a private network for curated experiences, people, and places.
+          Guestlist operates privately across select cities.<br>
           <strong>There is no public membership.</strong>
         </p>
+        <p class="sub" style="margin-top:-6px; max-width:70ch;">
+          Guestlist is a referral-led network for curated experiences, people, and places.<br>
+          Access is granted only through existing members, partners, or trusted intermediaries.
+        </p>
 
-        <!-- One-field gate (no referral codes) -->
-        <!-- Replace FORM_ENDPOINT with your form provider endpoint (Formspree/Basin/etc.) -->
-        <form class="gate" id="gate" action="FORM_ENDPOINT" method="POST">
-          <label for="email">Request access</label>
-          <div class="row">
-            <input id="email" name="email" type="email" placeholder="Email" required autocomplete="email" />
-            <button type="submit">Request</button>
+        <!-- Email gate pushed into the background -->
+        <div class="detailsWrap" aria-label="Administrative submission">
+          <div class="reveal" id="reveal">
+            <span class="chev">›</span>
+            <span>Leave details</span>
           </div>
 
-          <!-- Optional hidden fields for clean inbox labeling -->
-          <input type="hidden" name="source" value="clubguestlists.com" />
-          <input type="hidden" name="type" value="access-request" />
+          <form class="gate hidden" id="gate" action="FORM_ENDPOINT" method="POST">
+            <label for="email">Leave your email only if you have been explicitly directed to do so.</label>
+            <div class="row">
+              <input id="email" name="email" type="email" placeholder="Email" required autocomplete="email" />
+              <button type="submit">Submit details</button>
+            </div>
+            <input type="hidden" name="source" value="clubguestlists.com" />
+            <input type="hidden" name="type" value="restricted-access" />
+            <div class="resp" id="resp"></div>
 
-          <div class="resp" id="resp"></div>
-        </form>
+            <div class="note">
+              <strong>Submission logged.</strong><br>
+              Do not expect a response unless access is granted.
+            </div>
+          </form>
+
+          <div class="footnote">
+            Guestlist does not reply to unsolicited access requests.
+          </div>
+        </div>
 
         <div class="below">
           <div class="grid" aria-label="Details">
             <section class="card">
               <h2>How it works</h2>
               <p>
-                Access is granted privately.<br>
-                <span>Requests are reviewed periodically. No public waiting list.</span>
+                Guestlist is referral-led.<br>
+                <span>Access is extended privately and selectively. Submissions without context are rarely approved.</span>
               </p>
             </section>
 
@@ -234,23 +298,23 @@
               <h2>What access looks like</h2>
               <p>
                 Private listings. Limited invitations. Small rooms.<br>
-                <span>Not everything is advertised. Not everything is for everyone.</span>
+                <span>Not everything is visible. Not everything is repeatable.</span>
               </p>
             </section>
 
             <section class="card">
               <h2>What this is not</h2>
               <p>
-                Not a ticket marketplace. Not a newsletter. Not a public directory.<br>
-                <span>We don’t optimise for reach. We optimise for signal.</span>
+                Not a ticket marketplace. Not a mailing list. Not a public directory.<br>
+                <span>Guestlist does not optimise for reach.</span>
               </p>
             </section>
 
             <section class="card">
               <h2>Conduct</h2>
               <p>
-                Discretion is the baseline. Respect hosts and spaces.<br>
-                <span>Access is a privilege. It can be removed.</span>
+                Discretion is expected.<br>
+                <span>Access is a privilege. It may be withdrawn without explanation.</span>
               </p>
             </section>
           </div>
@@ -265,20 +329,26 @@
             </div>
           </footer>
         </div>
+
       </div>
     </section>
   </div>
 
   <script>
-    // Cold confirmation (no redirect, no fanfare)
+    const reveal = document.getElementById('reveal');
     const form = document.getElementById('gate');
     const resp = document.getElementById('resp');
 
+    // Keep it subtle: click to reveal form
+    reveal.addEventListener('click', () => {
+      form.classList.toggle('hidden');
+      reveal.querySelector('.chev').textContent = form.classList.contains('hidden') ? '›' : '⌄';
+    });
+
+    // Cold confirmation (works even if provider redirects)
     if (form && resp) {
       form.addEventListener('submit', () => {
-        // Many form providers redirect by default.
-        // This message will show briefly; if you want no redirect, pick a provider that supports AJAX.
-        resp.textContent = 'Received.';
+        resp.textContent = 'Submission logged.';
       });
     }
   </script>

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Guestlist — Access is restricted</title>
-  <meta name="description" content="Guestlist operates privately across select cities. There is no public membership. Access is granted only through trusted referrals." />
+  <title>Guestlist — Private Access</title>
+  <meta name="description" content="Guestlist operates privately across select cities. Access is referral-led and extended selectively." />
   <link rel="icon" href="/favicon.ico" />
 
   <style>
@@ -14,226 +14,166 @@
       --muted:#a8a8a8;
       --faint:#6f6f6f;
       --line:rgba(255,255,255,.10);
-      --line2:rgba(255,255,255,.07);
-      --card:rgba(255,255,255,.04);
-      --card2:rgba(255,255,255,.02);
+      --soft:rgba(255,255,255,.06);
       --radius:18px;
-      --max:1040px;
+      --max:1080px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      background: var(--bg);
+      background:var(--bg);
       color:var(--fg);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       letter-spacing:.2px;
     }
     a{color:inherit; text-decoration:none}
-    .wrap{max-width:var(--max); margin:0 auto; padding:26px 18px 80px}
+    .wrap{max-width:var(--max); margin:0 auto; padding:26px 18px 90px}
 
     header{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:8px 0 18px;
+      display:flex; justify-content:space-between; align-items:center;
+      padding-bottom:18px;
     }
     .brand{
       display:flex; align-items:center; gap:10px;
-      font-weight:600; letter-spacing:1.2px;
-      text-transform:uppercase; font-size:12px;
-      color:var(--muted);
+      font-size:12px; letter-spacing:1.3px;
+      text-transform:uppercase; color:var(--muted); font-weight:600;
     }
-    .dot{width:7px; height:7px; border-radius:50%; background:var(--fg); opacity:.9}
+    .dot{width:7px; height:7px; border-radius:50%; background:var(--fg)}
     .topline{
-      color:var(--faint);
-      text-transform:uppercase;
-      letter-spacing:1.2px;
-      font-size:11px;
+      font-size:11px; letter-spacing:1.2px;
+      text-transform:uppercase; color:var(--faint);
     }
 
-    /* HERO */
     .hero{
-      margin-top:10px;
-      border:1px solid var(--line);
+      margin-top:8px;
       border-radius:28px;
       overflow:hidden;
+      border:1px solid var(--line);
       background:
-        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.90)),
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.9)),
         url('/hero.jpg') center/cover no-repeat;
     }
-    .heroInner{
-      padding:58px 20px 28px;
-    }
-    @media (min-width: 860px){
-      .heroInner{padding:78px 34px 34px}
+    .heroInner{padding:70px 26px 34px}
+    @media (min-width:860px){
+      .heroInner{padding:90px 40px 44px}
     }
 
     h1{
       margin:0 0 14px;
-      font-size:44px;
-      line-height:1.02;
-      font-weight:650;
-      letter-spacing:-.9px;
-      text-shadow: 0 10px 45px rgba(0,0,0,.6);
+      font-size:52px; line-height:1.02;
+      letter-spacing:-1px; font-weight:650;
+      text-shadow:0 10px 50px rgba(0,0,0,.6);
     }
-    @media (min-width: 860px){
-      h1{font-size:56px}
+    .lead{
+      max-width:70ch;
+      font-size:15.5px;
+      line-height:1.65;
+      color:rgba(234,234,234,.85);
+      text-shadow:0 10px 50px rgba(0,0,0,.6);
+      margin-bottom:26px;
     }
 
-    .sub{
-      margin:0 0 20px;
-      color:rgba(234,234,234,.82);
-      max-width:68ch;
-      font-size:15px;
-      line-height:1.6;
-      text-shadow: 0 10px 45px rgba(0,0,0,.6);
-    }
-    .sub strong{color:var(--fg); font-weight:600}
-
-    /* "Administrative" details link (form is hidden by default) */
-    .detailsWrap{
-      margin-top:18px;
-      max-width:640px;
-    }
-    .reveal{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 12px;
+    .gateWrap{max-width:620px; margin-top:22px}
+    .gateToggle{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:10px 14px;
       border-radius:999px;
-      border:1px solid var(--line2);
-      background: rgba(0,0,0,.20);
-      color: rgba(234,234,234,.62);
-      font-size:12px;
-      letter-spacing:1.1px;
+      border:1px solid var(--soft);
+      color:rgba(234,234,234,.65);
+      font-size:12px; letter-spacing:1.2px;
       text-transform:uppercase;
       cursor:pointer;
-      user-select:none;
     }
-    .reveal:hover{
-      border-color: rgba(255,255,255,.12);
-      color: rgba(234,234,234,.72);
-    }
-    .reveal .chev{opacity:.7}
+    .gateToggle:hover{color:rgba(234,234,234,.8)}
+    .chev{opacity:.7}
 
-    /* Backgrounded form */
     .gate{
-      margin-top:10px;
-      padding:14px 14px 12px;
-      border:1px solid rgba(255,255,255,.06);
+      margin-top:12px;
+      padding:16px;
       border-radius:14px;
-      background: rgba(0,0,0,.22);
-      max-width:520px;
-
-      /* visually pushed back */
-      opacity:.75;
-      filter:saturate(.9);
+      border:1px solid rgba(255,255,255,.07);
+      background:rgba(0,0,0,.25);
+      opacity:.78;
     }
-    .gate label{
+    .hidden{display:none}
+
+    label{
       display:block;
-      color:rgba(234,234,234,.55);
-      font-size:11px;
+      font-size:12px;
       letter-spacing:1.2px;
       text-transform:uppercase;
-      margin:0 0 10px;
+      color:rgba(234,234,234,.6);
+      margin-bottom:10px;
     }
-    .row{display:flex; gap:10px; align-items:center}
+    .row{display:flex; gap:10px}
     input{
-      flex:1;
-      height:40px;
+      flex:1; height:42px;
       border-radius:12px;
       border:1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.28);
-      color:rgba(234,234,234,.9);
+      background:rgba(0,0,0,.3);
+      color:var(--fg);
       padding:0 12px;
-      outline:none;
-      font-size:13px;
+      font-size:14px;
     }
-    input::placeholder{color:rgba(234,234,234,.26)}
     button{
-      height:40px;
-      padding:0 12px;
+      height:42px;
+      padding:0 14px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.06);
-      color:rgba(234,234,234,.85);
-      cursor:pointer;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:var(--fg);
       font-size:12px;
       letter-spacing:.4px;
       text-transform:uppercase;
-      white-space:nowrap;
-    }
-    button:hover{background: rgba(255,255,255,.09)}
-    .resp{
-      margin-top:10px;
-      min-height:18px;
-      color:rgba(234,234,234,.62);
-      font-size:12.5px;
-      line-height:1.35;
+      cursor:pointer;
     }
     .note{
-      margin-top:10px;
-      color:rgba(234,234,234,.55);
-      font-size:12.5px;
-      line-height:1.45;
-      max-width:66ch;
+      margin-top:12px;
+      font-size:13px;
+      line-height:1.5;
+      color:rgba(234,234,234,.6);
+      max-width:68ch;
     }
-    .note strong{color:rgba(234,234,234,.78); font-weight:600}
 
-    /* CONTENT GRID */
-    .below{padding:22px 2px 0}
-    .grid{
-      margin-top:18px;
+    .section{
+      margin-top:34px;
       display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
+      grid-template-columns:1fr;
+      gap:14px;
     }
-    @media (min-width: 860px){
-      .grid{grid-template-columns: 1fr 1fr}
+    @media(min-width:860px){
+      .section{grid-template-columns:1fr 1fr}
     }
     .card{
-      padding:18px;
+      padding:20px;
+      border-radius:18px;
       border:1px solid var(--line);
-      border-radius:var(--radius);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      background:rgba(255,255,255,.03);
     }
     .card h2{
       margin:0 0 10px;
       font-size:13px;
-      font-weight:650;
       letter-spacing:1.2px;
       text-transform:uppercase;
       color:var(--muted);
     }
     .card p{
       margin:0;
-      font-size:14px;
+      font-size:14.5px;
       line-height:1.6;
-      color:rgba(234,234,234,.92);
-      max-width:66ch;
+      color:rgba(234,234,234,.95);
     }
-    .card p span{color:var(--muted)}
     footer{
-      margin-top:26px;
-      padding-top:16px;
+      margin-top:40px;
+      padding-top:18px;
       border-top:1px solid var(--line);
       display:flex;
       justify-content:space-between;
-      align-items:flex-end;
-      gap:14px;
       flex-wrap:wrap;
+      gap:14px;
     }
-    .small{font-size:12px; color:var(--faint); line-height:1.5}
-    .contact{font-size:12px; color:var(--muted)}
-    .footnote{
-      margin-top:10px;
-      font-size:12px;
-      color:rgba(234,234,234,.42);
-      line-height:1.5;
-      max-width:72ch;
-    }
-
-    /* Hidden state for the gate */
-    .hidden{display:none}
+    .small{font-size:12px; color:var(--faint)}
   </style>
 </head>
 
@@ -244,113 +184,106 @@
       <div class="topline">Operating quietly across select cities</div>
     </header>
 
-    <section class="hero" aria-label="Hero">
+    <section class="hero">
       <div class="heroInner">
-        <h1>Access is restricted.</h1>
-        <p class="sub">
-          Guestlist operates privately across select cities.<br>
-          <strong>There is no public membership.</strong>
-        </p>
-        <p class="sub" style="margin-top:-6px; max-width:70ch;">
-          Guestlist is a referral-led network for curated experiences, people, and places.<br>
-          Access is granted only through existing members, partners, or trusted intermediaries.
+        <h1>Access is selective.</h1>
+        <p class="lead">
+          Guestlist is a privately operated network connecting curated experiences,
+          spaces, and people across a small number of cities.
+          <br><br>
+          There is no public membership. Access is typically extended through
+          existing members, hosts, partners, and trusted intermediaries.
         </p>
 
-        <!-- Email gate pushed into the background -->
-        <div class="detailsWrap" aria-label="Administrative submission">
-          <div class="reveal" id="reveal">
-            <span class="chev">›</span>
-            <span>Leave details</span>
+        <div class="gateWrap">
+          <div class="gateToggle" id="toggle">
+            <span class="chev">›</span> Leave details
           </div>
 
           <form class="gate hidden" id="gate" action="FORM_ENDPOINT" method="POST">
-            <label for="email">Leave your email only if you have been explicitly directed to do so.</label>
+            <label>Leave your email if you believe you are a good fit.</label>
             <div class="row">
-              <input id="email" name="email" type="email" placeholder="Email" required autocomplete="email" />
+              <input type="email" name="email" placeholder="Email" required />
               <button type="submit">Submit details</button>
             </div>
-            <input type="hidden" name="source" value="clubguestlists.com" />
-            <input type="hidden" name="type" value="restricted-access" />
-            <div class="resp" id="resp"></div>
-
             <div class="note">
-              <strong>Submission logged.</strong><br>
-              Do not expect a response unless access is granted.
+              Submissions are reviewed selectively.<br>
+              You will only be contacted if access is granted.
             </div>
           </form>
-
-          <div class="footnote">
-            Guestlist does not reply to unsolicited access requests.
-          </div>
         </div>
-
-        <div class="below">
-          <div class="grid" aria-label="Details">
-            <section class="card">
-              <h2>How it works</h2>
-              <p>
-                Guestlist is referral-led.<br>
-                <span>Access is extended privately and selectively. Submissions without context are rarely approved.</span>
-              </p>
-            </section>
-
-            <section class="card">
-              <h2>What access looks like</h2>
-              <p>
-                Private listings. Limited invitations. Small rooms.<br>
-                <span>Not everything is visible. Not everything is repeatable.</span>
-              </p>
-            </section>
-
-            <section class="card">
-              <h2>What this is not</h2>
-              <p>
-                Not a ticket marketplace. Not a mailing list. Not a public directory.<br>
-                <span>Guestlist does not optimise for reach.</span>
-              </p>
-            </section>
-
-            <section class="card">
-              <h2>Conduct</h2>
-              <p>
-                Discretion is expected.<br>
-                <span>Access is a privilege. It may be withdrawn without explanation.</span>
-              </p>
-            </section>
-          </div>
-
-          <footer>
-            <div class="small">
-              Guestlist — private access.<br>
-              By referral only.
-            </div>
-            <div class="contact">
-              Contact: <a href="mailto:info@guestlist.net">info@guestlist.net</a>
-            </div>
-          </footer>
-        </div>
-
       </div>
     </section>
+
+    <section class="section">
+      <div class="card">
+        <h2>What Guestlist is</h2>
+        <p>
+          Guestlist exists to surface experiences and spaces that are not designed
+          for mass visibility. Many listings are private, time-sensitive, or
+          intentionally unadvertised.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Who it is for</h2>
+        <p>
+          Hosts, curators, and participants who value discretion, quality,
+          and context. Those comfortable operating without public validation.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>How access works</h2>
+        <p>
+          Most access is referral-led. In some cases, aligned interest is noted
+          and followed up privately. Silence should be considered a default outcome.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>What access looks like</h2>
+        <p>
+          Limited invitations. Small groups. Private listings.
+          Not everything is visible, and not everything repeats.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>What this is not</h2>
+        <p>
+          Not a ticket marketplace, mailing list, or social feed.
+          Guestlist does not optimise for reach or engagement metrics.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Conduct & discretion</h2>
+        <p>
+          Respect for hosts, spaces, and participants is assumed.
+          Access is a privilege and may be withdrawn without explanation.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="small">
+        Guestlist — private access.<br>
+        By referral.
+      </div>
+      <div class="small">
+        Contact: info@guestlist.net
+      </div>
+    </footer>
   </div>
 
   <script>
-    const reveal = document.getElementById('reveal');
-    const form = document.getElementById('gate');
-    const resp = document.getElementById('resp');
-
-    // Keep it subtle: click to reveal form
-    reveal.addEventListener('click', () => {
-      form.classList.toggle('hidden');
-      reveal.querySelector('.chev').textContent = form.classList.contains('hidden') ? '›' : '⌄';
-    });
-
-    // Cold confirmation (works even if provider redirects)
-    if (form && resp) {
-      form.addEventListener('submit', () => {
-        resp.textContent = 'Submission logged.';
-      });
-    }
+    const t = document.getElementById('toggle');
+    const g = document.getElementById('gate');
+    t.onclick = () => {
+      g.classList.toggle('hidden');
+      t.querySelector('.chev').textContent = g.classList.contains('hidden') ? '›' : '⌄';
+    };
   </script>
 </body>
 </html>

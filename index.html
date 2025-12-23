@@ -142,8 +142,32 @@
       min-height: 18px;
     }
 
+    /* Doctrine sections */
+    .doctrine {
+      margin-top: 60px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+
+    .block h2 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: #a8a8a8;
+      margin-bottom: 8px;
+    }
+
+    .block p {
+      max-width: 70ch;
+      font-size: 14.5px;
+      line-height: 1.65;
+      color: rgba(234,234,234,0.9);
+      margin: 0;
+    }
+
     footer {
-      margin-top: 50px;
+      margin-top: 70px;
       border-top: 1px solid rgba(255,255,255,0.1);
       padding-top: 18px;
       font-size: 12px;
@@ -186,13 +210,13 @@
           Not a ticket marketplace. Not a mailing list. Not a social feed.
         </p>
 
-        <div class="toggle" id="toggle">Leave details</div>
+        <div class="toggle" id="toggle">Submit details</div>
 
         <form class="gate" id="gate">
           <label>Leave your email if you believe you are a good fit.</label>
 
           <div class="row">
-            <input type="email" name="email" id="email" placeholder="Email" required />
+            <input type="email" id="email" placeholder="Email" required />
             <button type="submit">Submit</button>
           </div>
 
@@ -200,13 +224,65 @@
             Submissions are reviewed selectively. Silence should be considered the default outcome.
           </div>
 
-          <div class="note">
-            Discretion is assumed. Access may be withdrawn without explanation.
-          </div>
-
           <div class="status" id="status"></div>
         </form>
       </div>
+    </section>
+
+    <!-- AGREED SECTIONS -->
+    <section class="doctrine">
+
+      <div class="block">
+        <h2>What Guestlist is</h2>
+        <p>
+          A private access layer for experiences and spaces that are not designed for mass visibility.
+          Many listings are intentionally unadvertised, time-sensitive, or shared only through trusted circles.
+        </p>
+      </div>
+
+      <div class="block">
+        <h2>What access looks like</h2>
+        <p>
+          Private listings. Limited invitations. Small rooms.<br>
+          Not everything is visible. Not everything repeats.
+        </p>
+      </div>
+
+      <div class="block">
+        <h2>How access works</h2>
+        <p>
+          Referral-led by default. Invitations are extended locally, city by city.
+          In some cases, aligned interest is noted and followed up privately.<br>
+          Silence should be considered the default outcome.
+        </p>
+      </div>
+
+      <div class="block">
+        <h2>Who it is for</h2>
+        <p>
+          Hosts, curators, and participants who value discretion, quality, and context —
+          and who can operate without public validation.<br>
+          Guestlist is small on purpose.
+        </p>
+      </div>
+
+      <div class="block">
+        <h2>What this is not</h2>
+        <p>
+          Not a ticket marketplace. Not a mailing list. Not a social feed.
+          Guestlist does not optimise for engagement metrics.<br>
+          This is not built for the crowd.
+        </p>
+      </div>
+
+      <div class="block">
+        <h2>Conduct</h2>
+        <p>
+          Discretion is expected. Respect hosts and spaces.
+          Access is a privilege and may be withdrawn without explanation.
+        </p>
+      </div>
+
     </section>
 
     <footer>
@@ -232,18 +308,15 @@
       statusEl.textContent = '…';
 
       try {
-        const formData = new FormData(gate);
         const res = await fetch('https://usebasin.com/f/13b8b3bd918f', {
           method: 'POST',
-          body: formData
+          body: new FormData(gate)
         });
 
-        if (res.ok) {
-          statusEl.textContent = 'Submission logged.';
-          gate.reset();
-        } else {
-          statusEl.textContent = 'Unable to submit. Try again later.';
-        }
+        statusEl.textContent = res.ok
+          ? 'Submission logged.'
+          : 'Unable to submit. Try again later.';
+        if (res.ok) gate.reset();
       } catch {
         statusEl.textContent = 'Unable to submit. Try again later.';
       }

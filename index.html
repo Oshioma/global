@@ -1,60 +1,241 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Guestlist — Private Access</title>
   <meta name="description" content="Guestlist operates privately across a small number of international cities, with access extended locally and selectively." />
-  <meta name="robots" content="index,follow" />
   <link rel="icon" href="/favicon.ico" />
 
   <style>
-    :root{
-      --bg:#070707; --fg:#eaeaea; --muted:#a8a8a8; --faint:#6f6f6f;
-      --line:rgba(255,255,255,.10); --soft:rgba(255,255,255,.06);
-      --glass:rgba(0,0,0,.25); --max:1100px;
+    body {
+      margin: 0;
+      background: #070707;
+      color: #eaeaea;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial;
+      letter-spacing: 0.2px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--fg);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      letter-spacing:.2px;
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 90px;
     }
-    a{color:inherit;text-decoration:none}
-    .wrap{max-width:var(--max);margin:0 auto;padding:26px 18px 90px}
 
-    header{display:flex;justify-content:space-between;align-items:center;padding:8px 0 18px}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:650;font-size:12px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
-    .dot{width:7px;height:7px;border-radius:50%;background:var(--fg);opacity:.95}
-    .topline{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint)}
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      color: #a8a8a8;
+    }
 
-    .hero{
-      border-radius:28px; overflow:hidden; border:1px solid var(--line);
+    .hero {
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
       background:
-        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.92)),
-        url('/hero.jpg') center/cover no-repeat;
+        linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.9)),
+        url('/hero.jpg') center / cover no-repeat;
     }
-    .heroInner{padding:74px 22px 44px}
-    @media (min-width:860px){ .heroInner{padding:92px 40px 54px} }
 
-    h1{
-      margin:0 0 14px; font-size:52px; line-height:1.02; font-weight:700; letter-spacing:-1px;
-      text-shadow:0 10px 55px rgba(0,0,0,.65);
+    .heroInner {
+      padding: 80px 28px 50px;
     }
-    @media (min-width:860px){ h1{font-size:60px} }
 
-    .lead{
-      margin:0 0 14px; max-width:74ch; font-size:15.5px; line-height:1.65;
-      color:rgba(234,234,234,.84); text-shadow:0 10px 55px rgba(0,0,0,.65);
+    h1 {
+      font-size: 56px;
+      margin: 0 0 16px;
+      line-height: 1.02;
+      letter-spacing: -1px;
     }
-    .lead strong{color:rgba(234,234,234,.95);font-weight:650}
 
-    .gateWrap{max-width:720px;margin-top:22px}
-    .toggle{
-      display:inline-flex;align-items:center;gap:10px;
-      padding:10px 14px;border-radius:999px;
-      border:1px solid var(--soft);
-      background:rgba(0,0,0,.14);
-      color:rgba(234,234,234,.66);
-      font-size:12px; le
+    .lead {
+      max-width: 72ch;
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: rgba(234,234,234,0.85);
+      margin-bottom: 14px;
+    }
+
+    .toggle {
+      margin-top: 24px;
+      display: inline-block;
+      padding: 10px 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: rgba(234,234,234,0.7);
+      cursor: pointer;
+    }
+
+    .gate {
+      margin-top: 14px;
+      max-width: 520px;
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: none;
+    }
+
+    label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: rgba(234,234,234,0.6);
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.3);
+      color: #eaeaea;
+      padding: 0 12px;
+      font-size: 14px;
+    }
+
+    button {
+      height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.08);
+      color: #eaeaea;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: rgba(234,234,234,0.65);
+      line-height: 1.5;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(234,234,234,0.75);
+      min-height: 18px;
+    }
+
+    footer {
+      margin-top: 50px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 18px;
+      font-size: 12px;
+      color: #6f6f6f;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>Guestlist</div>
+      <div>Operating quietly across select cities</div>
+    </header>
+
+    <section class="hero">
+      <div class="heroInner">
+        <h1>Access is selective.</h1>
+
+        <p class="lead">
+          Guestlist is a privately operated network connecting curated experiences,
+          spaces, and people.
+        </p>
+
+        <p class="lead">
+          <strong>Guestlist operates privately across a small number of international cities,
+          with access extended locally and selectively.</strong>
+        </p>
+
+        <p class="lead">
+          There is no public membership. Access is typically extended through
+          existing members, hosts, partners, and trusted intermediaries.
+        </p>
+
+        <div class="toggle" id="toggle">Leave details</div>
+
+        <form class="gate" id="gate">
+          <label>Leave your email if you believe you are a good fit.</label>
+
+          <div class="row">
+            <input type="email" name="email" id="email" placeholder="Email" required />
+            <button type="submit">Submit</button>
+          </div>
+
+          <div class="note">
+            Submissions are reviewed selectively.<br />
+            You will only be contacted if access is granted.
+          </div>
+
+          <div class="status" id="status"></div>
+        </form>
+      </div>
+    </section>
+
+    <footer>
+      <div>Guestlist — private access.</div>
+      <div>info@guestlist.net</div>
+    </footer>
+  </div>
+
+  <script>
+    const toggle = document.getElementById('toggle');
+    const gate = document.getElementById('gate');
+    const statusEl = document.getElementById('status');
+
+    toggle.onclick = () => {
+      gate.style.display = gate.style.display === 'block' ? 'none' : 'block';
+      if (gate.style.display === 'block') {
+        document.getElementById('email').focus();
+      }
+    };
+
+    gate.onsubmit = async (e) => {
+      e.preventDefault();
+      statusEl.textContent = '…';
+
+      try {
+        const formData = new FormData(gate);
+        const res = await fetch('https://usebasin.com/f/13b8b3bd918f', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          statusEl.textContent = 'Submission logged.';
+          gate.reset();
+        } else {
+          statusEl.textContent = 'Unable to submit. Try again later.';
+        }
+      } catch {
+        statusEl.textContent = 'Unable to submit. Try again later.';
+      }
+    };
+  </script>
+</body>
+</html>

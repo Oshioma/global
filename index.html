@@ -142,28 +142,43 @@
       min-height: 18px;
     }
 
-    /* Doctrine sections */
-    .doctrine {
+    /* Ultra-quiet doctrine cards */
+    .doctrine{
       margin-top: 60px;
       display: grid;
       grid-template-columns: 1fr;
-      gap: 28px;
+      gap: 14px;
     }
-
-    .block h2 {
+    @media (min-width: 900px){
+      .doctrine{
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+    }
+    .card{
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      backdrop-filter: blur(6px);
+    }
+    .card h2{
+      margin: 0 0 10px;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 1.4px;
       color: #a8a8a8;
-      margin-bottom: 8px;
+      font-weight: 650;
     }
-
-    .block p {
+    .card p{
+      margin: 0;
       max-width: 70ch;
       font-size: 14.5px;
       line-height: 1.65;
       color: rgba(234,234,234,0.9);
-      margin: 0;
+    }
+    .card p span{
+      color: rgba(234,234,234,0.78);
     }
 
     footer {
@@ -229,10 +244,10 @@
       </div>
     </section>
 
-    <!-- AGREED SECTIONS -->
-    <section class="doctrine">
+    <!-- Doctrine (rebuilt as ultra-quiet cards) -->
+    <section class="doctrine" aria-label="Doctrine">
 
-      <div class="block">
+      <div class="card">
         <h2>What Guestlist is</h2>
         <p>
           A private access layer for experiences and spaces that are not designed for mass visibility.
@@ -240,42 +255,42 @@
         </p>
       </div>
 
-      <div class="block">
+      <div class="card">
         <h2>What access looks like</h2>
         <p>
           Private listings. Limited invitations. Small rooms.<br>
-          Not everything is visible. Not everything repeats.
+          <span>Not everything is visible. Not everything repeats.</span>
         </p>
       </div>
 
-      <div class="block">
+      <div class="card">
         <h2>How access works</h2>
         <p>
           Referral-led by default. Invitations are extended locally, city by city.
           In some cases, aligned interest is noted and followed up privately.<br>
-          Silence should be considered the default outcome.
+          <span>Silence should be considered the default outcome.</span>
         </p>
       </div>
 
-      <div class="block">
+      <div class="card">
         <h2>Who it is for</h2>
         <p>
           Hosts, curators, and participants who value discretion, quality, and context —
           and who can operate without public validation.<br>
-          Guestlist is small on purpose.
+          <span>Guestlist is small on purpose.</span>
         </p>
       </div>
 
-      <div class="block">
+      <div class="card">
         <h2>What this is not</h2>
         <p>
           Not a ticket marketplace. Not a mailing list. Not a social feed.
           Guestlist does not optimise for engagement metrics.<br>
-          This is not built for the crowd.
+          <span>This is not built for the crowd.</span>
         </p>
       </div>
 
-      <div class="block">
+      <div class="card">
         <h2>Conduct</h2>
         <p>
           Discretion is expected. Respect hosts and spaces.

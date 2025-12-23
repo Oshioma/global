@@ -10,15 +10,9 @@
 
   <style>
     :root{
-      --bg:#070707;
-      --fg:#eaeaea;
-      --muted:#a8a8a8;
-      --faint:#6f6f6f;
-      --line:rgba(255,255,255,.10);
-      --soft:rgba(255,255,255,.06);
-      --glass:rgba(0,0,0,.25);
-      --radius:18px;
-      --max:1100px;
+      --bg:#070707; --fg:#eaeaea; --muted:#a8a8a8; --faint:#6f6f6f;
+      --line:rgba(255,255,255,.10); --soft:rgba(255,255,255,.06);
+      --glass:rgba(0,0,0,.25); --radius:18px; --max:1100px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -55,10 +49,8 @@
         linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.92)),
         url('/hero.jpg') center/cover no-repeat;
     }
-    .heroInner{padding:74px 22px 40px}
-    @media (min-width: 860px){
-      .heroInner{padding:92px 40px 50px}
-    }
+    .heroInner{padding:74px 22px 44px}
+    @media (min-width:860px){ .heroInner{padding:92px 40px 54px} }
 
     h1{
       margin:0 0 14px;
@@ -66,11 +58,10 @@
       font-weight:700;letter-spacing:-1px;
       text-shadow:0 10px 55px rgba(0,0,0,.65);
     }
-    @media (min-width: 860px){
-      h1{font-size:60px}
-    }
+    @media (min-width:860px){ h1{font-size:60px} }
+
     .lead{
-      margin:0 0 16px;
+      margin:0 0 14px;
       max-width:74ch;
       font-size:15.5px;line-height:1.65;
       color:rgba(234,234,234,.84);
@@ -78,12 +69,11 @@
     }
     .lead strong{color:rgba(234,234,234,.95);font-weight:650}
 
-    /* Backgrounded email capture (collapsed by default) */
-    .gateWrap{max-width:680px;margin-top:22px}
+    /* Backgrounded form (collapsed by default) */
+    .gateWrap{max-width:720px;margin-top:22px}
     .toggle{
       display:inline-flex;align-items:center;gap:10px;
-      padding:10px 14px;
-      border-radius:999px;
+      padding:10px 14px;border-radius:999px;
       border:1px solid var(--soft);
       background:rgba(0,0,0,.14);
       color:rgba(234,234,234,.66);
@@ -93,8 +83,12 @@
       cursor:pointer;
       user-select:none;
     }
-    .toggle:hover{color:rgba(234,234,234,.80);border-color:rgba(255,255,255,.10)}
+    .toggle:hover{
+      color:rgba(234,234,234,.80);
+      border-color:rgba(255,255,255,.10)
+    }
     .chev{opacity:.7}
+    .hidden{display:none}
 
     .gate{
       margin-top:12px;
@@ -102,12 +96,10 @@
       border-radius:14px;
       border:1px solid rgba(255,255,255,.07);
       background:var(--glass);
-      opacity:.80; /* push it back */
+      opacity:.80; /* pushed back */
       backdrop-filter: blur(6px);
       max-width:560px;
     }
-    .hidden{display:none}
-
     .gate label{
       display:block;
       margin:0 0 10px;
@@ -118,9 +110,7 @@
     }
     .row{display:flex;gap:10px;align-items:center}
     input[type="email"]{
-      flex:1;
-      height:42px;
-      border-radius:12px;
+      flex:1;height:42px;border-radius:12px;
       border:1px solid rgba(255,255,255,.09);
       background:rgba(0,0,0,.28);
       color:rgba(234,234,234,.92);
@@ -130,9 +120,7 @@
     }
     input::placeholder{color:rgba(234,234,234,.28)}
     button{
-      height:42px;
-      padding:0 14px;
-      border-radius:12px;
+      height:42px;padding:0 14px;border-radius:12px;
       border:1px solid rgba(255,255,255,.10);
       background:rgba(255,255,255,.08);
       color:rgba(234,234,234,.90);
@@ -148,29 +136,20 @@
       font-size:13px;
       line-height:1.5;
       color:rgba(234,234,234,.62);
-      max-width:70ch;
+      max-width:72ch;
     }
     .note strong{color:rgba(234,234,234,.82);font-weight:650}
-    .resp{
-      margin-top:10px;
-      min-height:18px;
-      font-size:13px;
-      color:rgba(234,234,234,.70);
-    }
+
+    /* Basin JS uses these when success-action is "render" */
+    .w-form-done,.w-form-fail{display:none;margin-top:12px;font-size:13px;line-height:1.5}
+    .w-form-done{color:rgba(234,234,234,.78)}
+    .w-form-fail{color:rgba(234,234,234,.78)}
 
     /* Info grid */
-    .section{
-      margin-top:34px;
-      display:grid;
-      grid-template-columns:1fr;
-      gap:14px;
-    }
-    @media (min-width: 900px){
-      .section{grid-template-columns:1fr 1fr}
-    }
+    .section{margin-top:34px;display:grid;grid-template-columns:1fr;gap:14px}
+    @media (min-width:900px){ .section{grid-template-columns:1fr 1fr} }
     .card{
-      padding:20px;
-      border-radius:18px;
+      padding:20px;border-radius:18px;
       border:1px solid var(--line);
       background:rgba(255,255,255,.03);
     }
@@ -190,21 +169,14 @@
       max-width:70ch;
     }
     .card p span{color:var(--muted)}
+
     footer{
-      margin-top:40px;
-      padding-top:18px;
-      border-top:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      gap:14px;
+      margin-top:40px;padding-top:18px;border-top:1px solid var(--line);
+      display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px
     }
     .small{font-size:12px;color:var(--faint);line-height:1.5}
     .contact{font-size:12px;color:var(--muted)}
   </style>
-
-  <!-- Basin (Hosted Form) script you provided -->
-  <script src="https://hf.usebasin.com/hf/13b8b3bd918f-09f22a91d780.js" async></script>
 </head>
 
 <body>
@@ -219,8 +191,7 @@
         <h1>Access is selective.</h1>
 
         <p class="lead">
-          Guestlist is a privately operated network connecting curated experiences,
-          spaces, and people.
+          Guestlist is a privately operated network connecting curated experiences, spaces, and people.
         </p>
 
         <p class="lead">
@@ -228,21 +199,20 @@
         </p>
 
         <p class="lead">
-          There is no public membership. Access is typically extended through existing
-          members, hosts, partners, and trusted intermediaries.
+          There is no public membership. Access is typically extended through existing members, hosts, partners, and trusted intermediaries.
         </p>
 
         <div class="gateWrap" aria-label="Leave details">
-          <div class="toggle" id="toggle">
-            <span class="chev">›</span> Leave details
-          </div>
+          <div class="toggle" id="toggle"><span class="chev">›</span> Leave details</div>
 
-          <!--
-            Basin Hosted Form script will handle submissions.
-            Keep this form minimal: one email field + a couple hidden fields for context.
-            If Basin needs a specific attribute or action URL for your hosted form, it will usually inject it.
-          -->
-          <form class="gate hidden" id="gate" method="POST">
+          <form
+            class="gate hidden"
+            id="gate"
+            action="https://usebasin.com/f/13b8b3bd918f"
+            method="POST"
+            data-basin-form
+            data-basin-success-action="render"
+          >
             <label for="email">Leave your email if you believe you are a good fit.</label>
 
             <div class="row">
@@ -258,7 +228,8 @@
               You will only be contacted if access is granted.
             </div>
 
-            <div class="resp" id="resp"></div>
+            <div class="w-form-done">Submission logged.</div>
+            <div class="w-form-fail">Something prevented delivery. Try again later.</div>
           </form>
 
           <div class="note" style="margin-top:10px; opacity:.92;">
@@ -278,19 +249,19 @@
       </div>
 
       <div class="card">
-        <h2>What access looks like</h2>
-        <p>
-          Private listings. Limited invitations. Small rooms.<br>
-          <span>Not everything is visible. Not everything repeats.</span>
-        </p>
-      </div>
-
-      <div class="card">
         <h2>How access works</h2>
         <p>
           Referral-led by default. Invitations are extended locally, city by city.
           In some cases, aligned interest is noted and followed up privately.<br>
           <span>Silence should be considered the default outcome.</span>
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>What access looks like</h2>
+        <p>
+          Private listings. Limited invitations. Small rooms.<br>
+          <span>Not everything is visible. Not everything repeats.</span>
         </p>
       </div>
 
@@ -333,25 +304,21 @@
   </div>
 
   <script>
-    // Toggle the "backgrounded" form
+    // Toggle the backgrounded form
     const toggle = document.getElementById('toggle');
     const gate = document.getElementById('gate');
-    const resp = document.getElementById('resp');
 
     toggle.addEventListener('click', () => {
       gate.classList.toggle('hidden');
       toggle.querySelector('.chev').textContent = gate.classList.contains('hidden') ? '›' : '⌄';
       if (!gate.classList.contains('hidden')) {
-        // focus email gently
         const email = document.getElementById('email');
         setTimeout(() => email && email.focus(), 50);
       }
     });
-
-    // Cold, on-page acknowledgement (even if Basin also shows something)
-    gate.addEventListener('submit', () => {
-      if (resp) resp.textContent = 'Submission logged.';
-    });
   </script>
+
+  <!-- Basin JS keeps submission on-page and renders success/fail blocks -->
+  <script src="https://js.usebasin.com/v2.10.0.min.js" defer></script>
 </body>
 </html>

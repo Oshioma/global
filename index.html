@@ -33,6 +33,13 @@
       color: #a8a8a8;
     }
 
+    /* Subtle authority boost for the name */
+    header .brand {
+      font-weight: 650;
+      letter-spacing: 1.6px;
+      color: rgba(234,234,234,0.9);
+    }
+
     /* NO VISIBLE EDGE HERO */
     .hero {
       border-radius: 26px;
@@ -204,7 +211,7 @@
 <body>
   <div class="wrap">
     <header>
-      <div>Guestlist</div>
+      <div class="brand">Guestlist</div>
       <div>Operating quietly across select cities</div>
     </header>
 
@@ -233,7 +240,6 @@
 
         <div class="toggle" id="toggle">Submit details</div>
 
-        <!-- Basin endpoint + required name="email" -->
         <form class="gate" id="gate" action="https://usebasin.com/f/13b8b3bd918f" method="POST">
           <label>Leave your email if you believe you are a good fit.</label>
 

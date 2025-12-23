@@ -26,18 +26,38 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 14px;
       margin-bottom: 28px;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 1.3px;
       color: #a8a8a8;
+      flex-wrap: wrap;
     }
 
-    /* Subtle authority boost for the name */
     header .brand {
       font-weight: 650;
       letter-spacing: 1.6px;
       color: rgba(234,234,234,0.9);
+      white-space: nowrap;
+    }
+
+    header .tagline {
+      white-space: nowrap;
+    }
+
+    /* Mobile header behaviour */
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      header .tagline {
+        font-size: 11px;
+        letter-spacing: 1.1px;
+        color: #8f8f8f;
+      }
     }
 
     /* NO VISIBLE EDGE HERO */
@@ -212,7 +232,7 @@
   <div class="wrap">
     <header>
       <div class="brand">Guestlist</div>
-      <div>Operating quietly across select cities</div>
+      <div class="tagline">Operating quietly across select cities</div>
     </header>
 
     <section class="hero">

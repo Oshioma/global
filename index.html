@@ -233,11 +233,12 @@
 
         <div class="toggle" id="toggle">Submit details</div>
 
-        <form class="gate" id="gate">
+        <!-- Basin endpoint + required name="email" -->
+        <form class="gate" id="gate" action="https://usebasin.com/f/13b8b3bd918f" method="POST">
           <label>Leave your email if you believe you are a good fit.</label>
 
           <div class="row">
-            <input type="email" id="email" placeholder="Email" required />
+            <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email" />
             <button type="submit">Submit</button>
           </div>
 
@@ -326,15 +327,17 @@
       statusEl.textContent = '…';
 
       try {
-        const res = await fetch('https://usebasin.com/f/13b8b3bd918f', {
+        const res = await fetch(gate.action, {
           method: 'POST',
           body: new FormData(gate)
         });
 
-        statusEl.textContent = res.ok
-          ? 'Submission logged.'
-          : 'Unable to submit. Try again later.';
-        if (res.ok) gate.reset();
+        if (res.ok) {
+          statusEl.textContent = 'Submission logged.';
+          gate.reset();
+        } else {
+          statusEl.textContent = `Unable to submit (HTTP ${res.status}). Try again later.`;
+        }
       } catch {
         statusEl.textContent = 'Unable to submit. Try again later.';
       }

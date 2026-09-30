@@ -803,7 +803,8 @@ section:first-child > .sectionLabel:first-child { margin-top: 0; }
   font-size: 11px;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text);
+  font-weight: 600;
   margin: 14px 0 6px;
 }
 .formCard input, .formCard textarea, .formCard select {

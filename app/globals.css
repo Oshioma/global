@@ -23,6 +23,7 @@
   --gold-ink: #9a7b1f; /* the brand gold as TEXT on the light ground */
   --header-bg: #ffffff; /* opaque: nothing scrolls through the navigation */
   --media-ph: #eae8e1;
+  --field-bg: #ffffff; /* form inputs: white on the light card */
   color-scheme: light;
   --radius: 18px;
   --radius-sm: 12px;
@@ -53,6 +54,7 @@
   --gold-ink: #e8c46a; /* in the dark it goes back to the bright brand yellow */
   --header-bg: #070707; /* opaque: nothing scrolls through the navigation */
   --media-ph: #141414;
+  --field-bg: rgba(0, 0, 0, 0.3);
   color-scheme: dark;
 }
 
@@ -801,13 +803,13 @@ section:first-child > .sectionLabel:first-child { margin-top: 0; }
   font-size: 11px;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-muted);
   margin: 14px 0 6px;
 }
 .formCard input, .formCard textarea, .formCard select {
   width: 100%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid var(--border);
+  background: var(--field-bg);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--text);
   padding: 11px 13px;
@@ -815,7 +817,9 @@ section:first-child > .sectionLabel:first-child { margin-top: 0; }
   outline: none;
   font-family: inherit;
 }
-.formCard input:focus, .formCard textarea:focus { border-color: var(--border-strong); }
+.formCard input::placeholder, .formCard textarea::placeholder { color: var(--text-faint); opacity: 1; }
+.formCard input:focus, .formCard textarea:focus, .formCard select:focus { border-color: var(--accent); }
+.formCard input + .fieldNote { margin-top: 8px; }
 .formError { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 16px; }
 .formOk { color: var(--ok); font-size: 13px; margin-top: 12px; }
 

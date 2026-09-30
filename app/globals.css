@@ -244,7 +244,7 @@ button { font-family: inherit; }
 }
 
 .pageStandfirst {
-  color: var(--text-muted);
+  color: var(--text-soft);
   font-size: 15px;
   line-height: 1.6;
   max-width: 62ch;

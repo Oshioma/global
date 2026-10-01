@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ImageField } from './ImageField';
 
 export function ApplyForm({ categories }: { categories: { id: string; name: string }[] }) {
   const router = useRouter();
@@ -44,10 +45,18 @@ export function ApplyForm({ categories }: { categories: { id: string; name: stri
       <input id="ap-web" value={v.website} onChange={(e) => upd({ website: e.target.value })} placeholder="https://…" />
       <label htmlFor="ap-ig">Instagram</label>
       <input id="ap-ig" value={v.instagram} onChange={(e) => upd({ instagram: e.target.value })} placeholder="https://instagram.com/…" />
-      <label htmlFor="ap-hero">A photo of the place or the product (link)</label>
-      <input id="ap-hero" value={v.heroImageUrl} onChange={(e) => upd({ heroImageUrl: e.target.value })} placeholder="https://… (landscape)" />
-      <label htmlFor="ap-logo">Your logo (link)</label>
-      <input id="ap-logo" value={v.logoUrl} onChange={(e) => upd({ logoUrl: e.target.value })} placeholder="https://… (square)" />
+      <ImageField id="ap-hero" label="A photo of the place or the product" value={v.heroImageUrl}
+                  onChange={(url) => upd({ heroImageUrl: url })} placeholder="https://… or upload (landscape)" />
+      {v.heroImageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <div className="evImgPreview"><img src={v.heroImageUrl} alt="" /></div>
+      )}
+      <ImageField id="ap-logo" label="Your logo" value={v.logoUrl}
+                  onChange={(url) => upd({ logoUrl: url })} placeholder="https://… or upload (square)" />
+      {v.logoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <div className="evImgPreview" style={{ width: 120 }}><img src={v.logoUrl} alt="" style={{ height: 120 }} /></div>
+      )}
       <p className="fieldNote">Optional — a good photo gets you noticed. Leave them blank and we’ll take the picture your website shares.</p>
       <label htmlFor="ap-desc">Tell us about the business and what you’d like to offer Guestlist members</label>
       <textarea id="ap-desc" rows={5} value={v.description} onChange={(e) => upd({ description: e.target.value })} />

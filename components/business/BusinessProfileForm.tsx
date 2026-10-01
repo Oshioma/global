@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ImageField } from '@/components/market/ImageField';
 
 type Values = {
   name: string; tagline: string; description: string; categoryId: string; city: string; country: string; address: string;
@@ -67,13 +68,13 @@ export function BusinessProfileForm({ businessId, initial, categories, endpoint,
       <input id="b-addr" value={v.address} onChange={(e) => upd({ address: e.target.value })} />
       <label htmlFor="b-web">Website</label>
       <input id="b-web" value={v.website} onChange={(e) => upd({ website: e.target.value })} placeholder="https://…" />
-      <label htmlFor="b-logo">Logo image URL</label>
-      <input id="b-logo" value={v.logoUrl} onChange={(e) => upd({ logoUrl: e.target.value })} placeholder="https://… (square)" />
+      <ImageField id="b-logo" label="Logo" value={v.logoUrl}
+                  onChange={(url) => upd({ logoUrl: url })} placeholder="https://… or upload (square)" />
       {v.logoUrl && <ImagePreview key={v.logoUrl} src={v.logoUrl} kind="logo" onClear={() => upd({ logoUrl: '' })} />}
-      <label htmlFor="b-hero">Photo URL</label>
-      <input id="b-hero" value={v.heroImageUrl} onChange={(e) => upd({ heroImageUrl: e.target.value })} placeholder="https://… (landscape)" />
+      <ImageField id="b-hero" label="Photo" value={v.heroImageUrl}
+                  onChange={(url) => upd({ heroImageUrl: url })} placeholder="https://… or upload (landscape)" />
       {v.heroImageUrl && <ImagePreview key={v.heroImageUrl} src={v.heroImageUrl} kind="photo" onClear={() => upd({ heroImageUrl: '' })} />}
-      <p className="fieldNote">Paste image links for now — the same way promoters do. Uploads come later.</p>
+      <p className="fieldNote">Paste a link or upload a picture — JPEG, PNG, WebP or GIF.</p>
       {SOCIALS.map((k) => (
         <div key={k}>
           <label htmlFor={`b-${k}`} style={{ textTransform: 'capitalize' }}>{k}</label>

@@ -4682,3 +4682,13 @@ a.anTile:hover .anTileGo { text-decoration: underline; }
 @media (max-width: 940px) {
   .askAd { padding: 22px 20px 20px; }
 }
+
+/* "We kept what you'd typed here" — components/FormDrafts. */
+.formDraftNote {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+  padding: 10px 14px; border-radius: 12px; font-size: 14px;
+  background: var(--text); color: var(--bg); box-shadow: 0 6px 24px rgba(0,0,0,.18);
+}
+.formDraftNote button { background: none; border: 0; color: inherit; cursor: pointer; font: inherit; padding: 0; }
+.formDraftNote button:first-of-type { text-decoration: underline; }

@@ -5,6 +5,7 @@ import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SetYourCity } from '@/components/SetYourCity';
 import { ConfirmYourEmail } from '@/components/auth/ConfirmYourEmail';
+import { FormDrafts } from '@/components/FormDrafts';
 import { getCurrentMember } from '@/lib/auth';
 import { SITE_URL, organisationSchema } from '@/lib/seo';
 
@@ -57,6 +58,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             what the ask explains. */}
         {member && !member.email_verified_at && <ConfirmYourEmail />}
         {children}
+        {/* Every form on the site survives a refresh — see components/FormDrafts. */}
+        <FormDrafts />
         <SiteFooter isSignedIn={!!member} isAdmin={member?.role === 'admin'} />
       </body>
     </html>

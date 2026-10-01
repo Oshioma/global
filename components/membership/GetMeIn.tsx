@@ -58,7 +58,7 @@ export function GetMeIn({
 
   if (viewer !== 'member') {
     return (
-      <div className="getMeIn">
+      <div className="getMeIn" data-draft="get-me-in">
         <div className="getMeInKicker">Guestlist membership</div>
         <div className="getMeInTitle">Get in free</div>
         <p className="getMeInSub">Member? Ask Guestlist to get you in free. Members get free entrance to parties whenever we can make it happen — plus discounts, priority access and special offers.</p>

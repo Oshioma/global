@@ -98,7 +98,7 @@ export function AnnounceForm({
   } as const;
 
   return (
-    <div className="youPanel announceSteps">
+    <div className="youPanel announceSteps" data-draft="announce">
       <div>
         <h2 className="youPanelTitle" style={{ marginBottom: 4 }}>Announce to followers</h2>
         <p className="youPanelSub" style={{ margin: 0 }}>

@@ -483,9 +483,23 @@ export async function runWeeklyDigests(now = new Date()): Promise<number> {
 // ---------------------------------------------------------------------------
 // EVENT REMINDERS — you're Going, it's tomorrow. One reminder per member
 // per event, ever (dedupe index); disableable globally per member.
+//
+// "Tomorrow" means the next calendar day in the event's own timezone, not
+// "18–42 hours away": a Saturday 01:00 start is 42 hours from Thursday
+// morning, and Thursday is not the day before Saturday. Sent from the
+// event-local morning so nobody gets it at midnight.
 // ---------------------------------------------------------------------------
 
-export async function queueEventReminders(): Promise<number> {
+const REMINDER_FROM_HOUR = 9; // event-local
+
+export function isReminderDue(now: Date, startAt: string | Date, timezone: string | null): boolean {
+  const local = memberLocalParts(now, timezone);
+  if (local.hour < REMINDER_FROM_HOUR) return false;
+  const tomorrow = memberLocalParts(new Date(now.getTime() + 24 * 3600 * 1000), timezone).date;
+  return memberLocalParts(new Date(startAt), timezone).date === tomorrow;
+}
+
+export async function queueEventReminders(now = new Date()): Promise<number> {
   const switches = await getSafetySwitches();
   if (switches.pause_event_reminders) return 0;
   const rows = await query<{
@@ -501,11 +515,12 @@ export async function queueEventReminders(): Promise<number> {
        left join member_email_prefs p on p.member_id = mea.member_id
       where mea.rsvp = 'going'
         and e.status = 'live' and e.listing_status <> 'cancelled'
-        and e.start_at between now() + interval '18 hours' and now() + interval '42 hours'
+        and e.start_at between now() and now() + interval '48 hours'
         and coalesce(p.event_reminders, true)`
   );
   let created = 0;
   for (const r of rows) {
+    if (!isReminderDue(now, r.start_at, r.timezone)) continue;
     const inserted = await queryOne<{ id: string }>(
       `insert into notifications (member_id, type, event_id, payload)
        values ($1, 'event_reminder', $2, $3)

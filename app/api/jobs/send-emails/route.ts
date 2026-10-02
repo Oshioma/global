@@ -61,7 +61,7 @@ async function run(req: NextRequest) {
 
   const notificationEmails = await queuePromoterNotificationEmails();
   const promoterReview = await queuePromoterReviewNotifications();
-  const reminders = await queueEventReminders();
+  const reminders = await queueEventReminders(now);
   const travelDigests = await queueTravelDigests();
   const dailyDigests = await runDailyAlertDigests(now);
   const weeklyDigests = await runWeeklyDigests(now);

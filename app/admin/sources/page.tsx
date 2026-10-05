@@ -14,6 +14,8 @@ import { query } from '@/lib/db';
 import { fmtDate, sourceTypeLabel } from '@/lib/util';
 import { AddSourceForm } from '@/components/admin/AddSourceForm';
 import { SourceDiscovery } from '@/components/admin/SourceDiscovery';
+import { SourceSuggestions, type SuggestionRow } from '@/components/admin/SourceSuggestions';
+import { monthKey } from '@/lib/supply/suggest';
 import { SourceControls } from '@/components/admin/SourceControls';
 import { isLiveSource } from '@/lib/supply/health';
 import { canonicalCountry } from '@/lib/countries';
@@ -110,6 +112,27 @@ export default async function SourcesPage({
     ),
   ]);
 
+  // The monthly suggestions: everything still waiting on a decision, plus
+  // what this month already decided. A deployment that has not run migration
+  // 045 yet simply has none, rather than a broken page.
+  const month = monthKey();
+  const [suggestions, extraCountries] = await Promise.all([
+    query<SuggestionRow>(
+      `select id, batch_month, genre_key, name, url, kind, city, country, note,
+              candidates, verdict, status, source_id
+         from source_suggestions
+        where status = 'pending' or batch_month = $1
+        order by (status = 'pending') desc, created_at desc`,
+      [month]
+    ).catch(() => [] as SuggestionRow[]),
+    query<{ country: string }>(
+      `select country from source_suggestion_countries order by country`
+    ).catch(() => [] as { country: string }[]),
+  ]);
+  const sourceCountries = [...new Set(
+    sources.map((s) => canonicalCountry(s.country)).filter((c): c is string => !!c)
+  )];
+
   // The bench and the live list are two different jobs, so each tab counts
   // and filters only its own sources.
   const liveSources = sources.filter(isLiveSource);
@@ -198,6 +221,12 @@ export default async function SourcesPage({
 
       {view === 'workbench' && (
         <>
+          <SourceSuggestions
+            month={month}
+            suggestions={suggestions}
+            extraCountries={extraCountries.map((c) => c.country)}
+            sourceCountries={sourceCountries}
+          />
           <SourceDiscovery
             genres={genres}
             countries={knownCountries.map((c) => c.country)}

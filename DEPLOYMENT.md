@@ -192,6 +192,24 @@ select cron.schedule('guestlist-send-emails', '0 * * * *', $job$
     body := '{}'::jsonb
   );
 $job$);
+
+-- Monthly source suggestions (5 drum & bass, 5 house, 5 hip hop) for
+-- /admin/sources. Runs at 07:12 UTC on days 1–7: the first run usually fills
+-- the month, and the rest only top up what a short run missed — once all
+-- fifteen are in they return straight away without calling the AI. The admin
+-- email goes out when the batch is full, or on day 7 with whatever was found.
+select cron.schedule('guestlist-suggest-sources', '12 7 1-7 * *', $job$
+  select net.http_post(
+    url := 'https://www.guestlist.net/api/jobs/suggest-sources',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (
+        select decrypted_secret from vault.decrypted_secrets where name = 'guestlist_cron_secret'
+      )
+    ),
+    body := '{}'::jsonb
+  );
+$job$);
 ```
 
 Keep the token in Vault as above rather than writing it into the job body.

@@ -8,9 +8,9 @@
 // — so what lands in the panel has already passed the "Test" step an admin
 // would otherwise do by hand. It is still never added on its own.
 //
-// Countries rotate: each genre searches the countries we already have sources
-// in (plus any added to the short list on the panel), the ones that have gone
-// longest without a search first. The job is safe to run more than once a
+// Places rotate: drum & bass and house search the countries we already have
+// sources in (plus any added to the short list on the panel), hip hop searches
+// US cities; whichever have gone longest without a search go first. The job is safe to run more than once a
 // month — it only tops each genre up to five, so a run that ran out of time
 // is finished by the next one.
 
@@ -28,13 +28,31 @@ import { testVerdict, type ProbeResult } from './verdict';
 
 export const SUGGESTIONS_PER_GENRE = 5;
 
-export const GENRE_BUCKETS = [
+// Hip hop is searched in the United States, a city at a time — asked about
+// the whole country, the model names the same handful of famous venues every
+// month. The other genres rotate through the countries we have sources in.
+export const HIP_HOP_CITIES = [
+  'New York', 'Atlanta', 'Los Angeles', 'Chicago', 'Houston', 'Miami',
+  'Philadelphia', 'Washington', 'Detroit', 'New Orleans', 'Oakland', 'Memphis',
+];
+
+type Bucket = {
+  key: 'dnb' | 'house' | 'hiphop';
+  label: string;
+  match: RegExp;
+  cities?: { country: string; cities: string[] };
+};
+
+export const GENRE_BUCKETS: readonly Bucket[] = [
   { key: 'dnb', label: 'Drum & Bass', match: /drum\s*(&|and|n'?)?\s*bass|\bdnb\b|\bd&b\b|jungle/i },
   { key: 'house', label: 'House', match: /house/i },
-  { key: 'hiphop', label: 'Hip Hop', match: /hip[\s-]?hop|\brap\b/i },
-] as const;
+  {
+    key: 'hiphop', label: 'Hip Hop', match: /hip[\s-]?hop|\brap\b/i,
+    cities: { country: 'United States', cities: HIP_HOP_CITIES },
+  },
+];
 
-export type GenreKey = (typeof GENRE_BUCKETS)[number]['key'];
+export type GenreKey = Bucket['key'];
 
 export const genreLabel = (key: string) =>
   GENRE_BUCKETS.find((b) => b.key === key)?.label ?? key;
@@ -111,7 +129,31 @@ const defaultDeps = (): SuggestDeps => ({
   notify: true,
 });
 
-async function countriesToSearch(key: GenreKey, month: string): Promise<string[]> {
+type Place = { country: string; city: string | null };
+
+const placeLabel = (p: Place) => (p.city ? `${p.city}, ${p.country}` : p.country);
+
+// Where this genre searches next: the places that have waited longest, and
+// never one already searched for this genre this month.
+async function placesToSearch(bucket: Bucket, month: string): Promise<Place[]> {
+  if (bucket.cities) {
+    const { country, cities } = bucket.cities;
+    const rows = await query<{ city: string; last: string | null; this_month: boolean }>(
+      `select city, max(created_at)::text as last, bool_or(batch_month = $3) as this_month
+         from source_suggestion_searches
+        where genre_key = $1 and country = $2 and city is not null
+        group by city`,
+      [bucket.key, country, month]
+    );
+    const seen = new Map(rows.map((r) => [r.city, r]));
+    return cities
+      .filter((c) => !seen.get(c)?.this_month)
+      .map((c, i) => ({ c, i, last: seen.get(c)?.last ?? null }))
+      // Never-searched first, in list order; then oldest search first.
+      .sort((a, b) => (a.last ?? '').localeCompare(b.last ?? '') || a.i - b.i)
+      .slice(0, COUNTRIES_PER_RUN)
+      .map(({ c }) => ({ country, city: c }));
+  }
   const rows = await query<{ country: string }>(
     `select c.country
        from (select country from event_sources where country is not null and country <> ''
@@ -122,10 +164,11 @@ async function countriesToSearch(key: GenreKey, month: string): Promise<string[]
       group by c.country
       order by max(s.created_at) nulls first, random()
       limit $3`,
-    [key, month, COUNTRIES_PER_RUN]
+    [bucket.key, month, COUNTRIES_PER_RUN]
   );
   // Spelling variants of one country collapse to one search.
-  return [...new Set(rows.map((r) => canonicalCountry(r.country) || r.country))];
+  return [...new Set(rows.map((r) => canonicalCountry(r.country) || r.country))]
+    .map((country) => ({ country, city: null }));
 }
 
 export async function runMonthlySuggestions(
@@ -152,66 +195,81 @@ export async function runMonthlySuggestions(
     ...suggested.map((s) => s.host),
   ]);
 
-  const buckets: BucketResult[] = [];
-  let outOfTime = false;
-
+  type Plan = {
+    bucket: Bucket; result: BucketResult; need: number;
+    names: string[]; promptGenres: string[]; queue: Place[]; stopped: boolean;
+  };
+  const plans: Plan[] = [];
   for (const bucket of GENRE_BUCKETS) {
     const have = await queryOne<{ n: number }>(
       `select count(*)::int as n from source_suggestions where batch_month = $1 and genre_key = $2`,
       [month, bucket.key]
     );
     const result: BucketResult = { key: bucket.key, had: have?.n ?? 0, added: 0, countries: [], errors: [] };
-    buckets.push(result);
-    let need = SUGGESTIONS_PER_GENRE - result.had;
-    if (need <= 0) continue;
-
+    const need = SUGGESTIONS_PER_GENRE - result.had;
     const names = bucketGenres(bucket.key, genres).map((g) => g.name);
-    const promptGenres = names.length ? names : [bucket.label];
+    plans.push({
+      bucket, result, need, names,
+      promptGenres: names.length ? names : [bucket.label],
+      queue: need > 0 ? await placesToSearch(bucket, month) : [],
+      stopped: false,
+    });
+  }
+  const buckets = plans.map((p) => p.result);
+  let outOfTime = false;
 
-    for (const country of await countriesToSearch(bucket.key, month)) {
-      if (need <= 0) break;
-      if (left() < MIN_MS_FOR_SEARCH) { outOfTime = true; break; }
-      result.countries.push(country);
+  async function searchPlace(plan: Plan, place: Place) {
+    const { bucket, result } = plan;
+    const label = placeLabel(place);
+    result.countries.push(label);
 
-      const outcome = await discoverSources(
-        { country, city: null, genres: promptGenres, limit: 10 },
-        deps.client
-      );
-      if (!outcome.ok) {
-        result.errors.push(`${country}: ${outcome.detail}`);
-        await logSearch(month, bucket.key, country, 0, 0, outcome.detail);
-        // No API key is not going to fix itself on the next country.
-        if (outcome.error === 'unavailable') break;
+    const outcome = await discoverSources(
+      { country: place.country, city: place.city, genres: plan.promptGenres, limit: 10 },
+      deps.client
+    );
+    if (!outcome.ok) {
+      result.errors.push(`${label}: ${outcome.detail}`);
+      await logSearch(month, bucket.key, place, 0, 0, outcome.detail);
+      // No API key is not going to fix itself on the next place.
+      if (outcome.error === 'unavailable') plan.stopped = true;
+      return;
+    }
+
+    const fresh = outcome.candidates.filter((c) => {
+      const h = hostOf(c.url);
+      return h && WANTED_KINDS.has(c.kind) && !seenHosts.has(h);
+    });
+    let kept = 0;
+    for (const c of fresh) {
+      if (plan.need <= 0) break;
+      if (left() < MIN_MS_FOR_PROBE) { outOfTime = true; break; }
+      // Claimed before the probe so a site listed twice is tested once.
+      seenHosts.add(hostOf(c.url)!);
+      let probe: ProbeResult;
+      try {
+        probe = await deps.probe(c.url);
+      } catch {
         continue;
       }
-
-      const fresh = outcome.candidates.filter((c) => {
-        const h = hostOf(c.url);
-        return h && WANTED_KINDS.has(c.kind) && !seenHosts.has(h);
-      });
-      let kept = 0;
-      for (const c of fresh) {
-        if (need <= 0) break;
-        if (left() < MIN_MS_FOR_PROBE) { outOfTime = true; break; }
-        // Claimed before the probe so a site listed twice is tested once.
-        seenHosts.add(hostOf(c.url)!);
-        let probe: ProbeResult;
-        try {
-          probe = await deps.probe(c.url);
-        } catch {
-          continue;
-        }
-        if (!probePassed(probe)) continue;
-        if (await saveSuggestion(month, bucket.key, country, c, probe, names)) {
-          kept++;
-          need--;
-          result.added++;
-        }
+      if (!probePassed(probe)) continue;
+      if (await saveSuggestion(month, bucket.key, place, c, probe, plan.names)) {
+        kept++;
+        plan.need--;
+        result.added++;
       }
-      await logSearch(month, bucket.key, country, outcome.candidates.length, kept, null);
-      if (outOfTime) break;
     }
-    if (outOfTime) break;
+    await logSearch(month, bucket.key, place, outcome.candidates.length, kept, null);
+  }
+
+  // One search per genre per round, so no genre can use up the run before
+  // the next one gets a turn.
+  rounds: for (let round = 0; round < COUNTRIES_PER_RUN; round++) {
+    for (const plan of plans) {
+      if (plan.stopped || plan.need <= 0 || round >= plan.queue.length) continue;
+      if (left() < MIN_MS_FOR_SEARCH) { outOfTime = true; break rounds; }
+      await searchPlace(plan, plan.queue[round]);
+      if (outOfTime) break rounds;
+    }
   }
 
   let emailed = 0;
@@ -225,19 +283,20 @@ export async function runMonthlySuggestions(
 }
 
 async function logSearch(
-  month: string, key: string, country: string, proposed: number, kept: number, error: string | null
+  month: string, key: string, place: Place, proposed: number, kept: number, error: string | null
 ) {
   await query(
-    `insert into source_suggestion_searches (batch_month, genre_key, country, proposed, kept, error)
-     values ($1, $2, $3, $4, $5, $6)`,
-    [month, key, country, proposed, kept, error?.slice(0, 300) ?? null]
+    `insert into source_suggestion_searches (batch_month, genre_key, country, city, proposed, kept, error)
+     values ($1, $2, $3, $4, $5, $6, $7)`,
+    [month, key, place.country, place.city, proposed, kept, error?.slice(0, 300) ?? null]
   );
 }
 
 async function saveSuggestion(
-  month: string, key: string, searchedCountry: string,
+  month: string, key: string, place: Place,
   c: SourceCandidate, probe: ProbeResult, bucketGenreNames: string[]
 ): Promise<boolean> {
+  const searchedCountry = place.country;
   // The test may have found the real listing page behind the URL we were
   // given; that is the one worth adding.
   const url = probe.target || c.url;
@@ -251,7 +310,7 @@ async function saveSuggestion(
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      on conflict (host) do nothing
      returning id`,
-    [month, key, c.name, url, host, c.homepage, c.kind, c.city,
+    [month, key, c.name, url, host, c.homepage, c.kind, c.city ?? place.city,
      canonicalCountry(c.country) || searchedCountry, searchedCountry,
      own.length ? own : c.genres.length ? c.genres : [genreLabel(key)],
      c.note, probe.candidates ?? 0, testVerdict(probe).text.slice(0, 500)]

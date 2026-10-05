@@ -1104,6 +1104,13 @@ async function main() {
       !rows.some((r: { host: string }) => r.host.startsWith('broken')));
     check('a genre that runs short moves on to the next country', first.buckets.every((b) => b.countries.length === 2));
     check('the prompt names the genre bucket', prompts.some((p) => /Drum & Bass/.test(p)) && prompts.some((p) => /Hip Hop/.test(p)));
+    const hipHop = first.buckets.find((b) => b.key === 'hiphop')!;
+    check('hip hop searches US cities, starting with New York',
+      hipHop.countries[0] === 'New York, United States'
+      && hipHop.countries.every((c) => c.endsWith(', United States'))
+      && prompts.some((p) => /Country: United States/.test(p) && /City: New York/.test(p)));
+    check('the other genres still rotate through our own countries',
+      first.buckets.filter((b) => b.key !== 'hiphop').every((b) => b.countries.every((c) => !c.includes(','))));
     const searched = await q(`select distinct country from source_suggestion_searches`);
     check('searches are logged per country for the rotation', searched.length >= 2);
 
@@ -1143,6 +1150,24 @@ async function main() {
       { client, probe: async (u) => { t += 100_000; return probe(u); }, now: () => t, notify: false },
       new Date('2026-12-01T07:12:00Z'));
     check('a run that runs out of time stops early and says so', slow.outOfTime);
+
+    // Every genre gets a turn, even when each search is slow: one search per
+    // genre per round, rather than one genre using the whole run.
+    let tick = 0;
+    const slowClient: DiscoveryClient = {
+      available: true,
+      async propose(input) { tick += 70_000; return client.propose(input); },
+    };
+    const fair = await runMonthlySuggestions(
+      { client: slowClient, probe, now: () => tick, notify: false }, new Date('2027-02-01T07:12:00Z'));
+    check('a short run still searches every genre once',
+      fair.outOfTime && fair.buckets.every((b) => b.countries.length === 1), JSON.stringify(fair.buckets));
+
+    // Next month, hip hop moves on to a city it has not searched yet.
+    const march = await runMonthlySuggestions({ client, probe, now: () => 0, notify: false }, new Date('2027-03-01T07:12:00Z'));
+    const marchCities = march.buckets.find((b) => b.key === 'hiphop')!.countries;
+    check('hip hop rotates to cities it has not searched yet',
+      marchCities.length > 0 && !marchCities.some((c) => hipHop.countries.includes(c)), marchCities.join(' | '));
 
     const noKey = await runMonthlySuggestions(
       { client: { available: false, async propose() { return { ok: false, detail: 'no key' }; } },

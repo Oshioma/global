@@ -50,6 +50,7 @@ export const MIGRATION_FILES: string[] = [
   '043_where_they_came_from.sql',
   '044_market_other_category.sql',
   '045_source_suggestions.sql',
+  '046_suggestion_search_city.sql',
 ];
 
 export const EXPECTED_TABLES: string[] = [
@@ -243,6 +244,7 @@ export const EXPECTED_COLUMNS: string[] = [
   'scene_entities.slug',
   'source_scans.note',
   'source_scans.outcomes',
+  'source_suggestion_searches.city',
   'venues.description',
   'venues.hero_image_url',
   'venues.location_id',

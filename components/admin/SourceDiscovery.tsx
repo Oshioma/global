@@ -15,6 +15,7 @@ import { GenrePicker, type GenreOpt } from '@/components/admin/GenrePicker';
 import { probeLabel, testVerdict, type ProbeResult } from '@/lib/supply/verdict';
 import { matchGenreIdsByName, sourceTypeLabel } from '@/lib/util';
 import { explainScan, type OutcomeTally } from '@/lib/supply/outcomes';
+import { startAndWatchScan } from '@/lib/supply/watchScan';
 
 type Candidate = {
   name: string;
@@ -174,15 +175,11 @@ export function SourceDiscovery({
   // without leaving the search.
   async function scan(c: Candidate, id: string) {
     setRow(c.url, { scanning: true, error: '', scan: null });
-    try {
-      const res = await fetch(`/api/admin/sources/${id}/scan`, { method: 'POST' });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) setRow(c.url, { scanning: false, scan: data });
-      else setRow(c.url, { scanning: false, error: data?.error ?? 'Scan failed' });
-      router.refresh();
-    } catch {
-      setRow(c.url, { scanning: false, error: 'Could not reach the server' });
-    }
+    // The POST only starts the scan; wait for the row to say how it finished.
+    const out = await startAndWatchScan(id);
+    if (out.ok) setRow(c.url, { scanning: false, scan: out.scan });
+    else setRow(c.url, { scanning: false, error: out.error });
+    router.refresh();
   }
 
   return (

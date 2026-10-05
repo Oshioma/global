@@ -8,6 +8,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { sourceTypeLabel } from '@/lib/util';
+import { startAndWatchScan } from '@/lib/supply/watchScan';
+import { explainScan } from '@/lib/supply/outcomes';
 
 export type SuggestionRow = {
   id: string;
@@ -79,24 +81,25 @@ export function SourceSuggestions({
   // Adding is not the finish line — scanning is. Same offer as the search.
   async function scan(s: SuggestionRow) {
     if (!s.source_id) return;
-    setRow(s.id, { scanning: true, error: '', scanNote: '' });
-    try {
-      const res = await fetch(`/api/admin/sources/${s.source_id}/scan`, { method: 'POST' });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setRow(s.id, {
-          scanning: false,
-          scanNote: data.status === 'succeeded'
-            ? `Scanned: ${data.extracted ?? 0} extracted, ${data.duplicates ?? 0} duplicate, ${data.failed ?? 0} failed`
-            : (data.error ?? 'Scan failed'),
-        });
-        router.refresh();
-      } else {
-        setRow(s.id, { scanning: false, error: data?.error ?? 'Scan failed' });
-      }
-    } catch {
-      setRow(s.id, { scanning: false, error: 'Could not reach the server' });
+    setRow(s.id, { scanning: true, error: '', scanNote: 'Scanning…' });
+    const out = await startAndWatchScan(s.source_id, (note) =>
+      setRow(s.id, { scanNote: note ? `Scanning… ${note}` : 'Scanning…' }));
+    if (!out.ok) {
+      setRow(s.id, { scanning: false, scanNote: '', error: out.error });
+      return;
     }
+    const r = out.scan;
+    const why = explainScan(r.outcomes, r.extracted);
+    setRow(s.id, {
+      scanning: false,
+      error: r.status === 'failed' ? (r.error ?? 'Scan failed') : '',
+      scanNote: r.status === 'failed' ? '' :
+        `Scanned: ${r.candidatesFound} link${r.candidatesFound === 1 ? '' : 's'} · ${r.extracted} extracted · `
+        + `${r.duplicates} duplicate · ${r.failed} failed`
+        + (r.extracted > 0 ? ' — review them in Events' : '')
+        + (why ? `. ${why}` : ''),
+    });
+    router.refresh();
   }
 
   async function findMore() {
@@ -171,8 +174,9 @@ export function SourceSuggestions({
           <strong>This month&rsquo;s suggestions{pending > 0 ? ` (${pending} to review)` : ''}</strong>
           <div style={{ color: 'var(--text-faint)', fontSize: 12.5 }}>
             Every month: 5 drum &amp; bass, 5 house and 5 hip hop promoters or clubs that aren&rsquo;t
-            sources yet, rotating through your countries. Each one has already passed the scanner
-            test — nothing is added until you press Add.
+            sources yet. Drum &amp; bass and house rotate through your countries; hip hop rotates
+            through US cities. Each one has already passed the scanner test — nothing is added
+            until you press Add.
           </div>
         </div>
         <button className="btnGhost" type="button" onClick={() => setOpen((o) => !o)}>
@@ -273,7 +277,7 @@ export function SourceSuggestions({
 
           <div style={{ marginTop: 16, fontSize: 12.5 }}>
             <div style={{ color: 'var(--text-faint)' }}>
-              Searches rotate through the countries you have sources in
+              Drum &amp; bass and house searches rotate through the countries you have sources in
               {sourceCountries.length ? ` (${sourceCountries.length})` : ''}, plus these:
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>

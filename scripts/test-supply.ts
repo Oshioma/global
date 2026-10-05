@@ -40,7 +40,8 @@ import { canonicalCity, isCanonicalCity } from '@/lib/cityNames';
 import { looksClientRendered } from '@/lib/supply/scanner';
 import { isLiveSource } from '@/lib/supply/health';
 import { findListingLink, previewBody } from '@/lib/supply/probe';
-import { testVerdict } from '@/lib/supply/verdict';
+import { testVerdict, type ProbeResult } from '@/lib/supply/verdict';
+import { runMonthlySuggestions, bucketGenres, probePassed, suggestionsEmail, hostOf } from '@/lib/supply/suggest';
 import { fetcherFor, renderingConfigured } from '@/lib/supply/render';
 import { parse } from 'node-html-parser';
 import { readRetreatLink, looksGenerated } from '@/lib/retreats';
@@ -1027,6 +1028,136 @@ async function main() {
     check('discovery says so when no API key is configured', !unavailable.ok && unavailable.error === 'unavailable');
     const garbled = await discoverSources(req, fake('sorry, I cannot help with that'));
     check('unparseable model output is an error, not a candidate', !garbled.ok);
+  }
+
+  // -------------------------------------------------------------------------
+  console.log('\n— monthly source suggestions (5 dnb, 5 house, 5 hip hop) —');
+  {
+    const taxonomy = [
+      { id: 'a', name: 'Deep House' }, { id: 'b', name: 'House' }, { id: 'c', name: 'Drum & Bass' },
+      { id: 'd', name: 'Jungle' }, { id: 'e', name: 'Hip Hop' }, { id: 'f', name: 'Techno' },
+    ];
+    check('house bucket takes every house genre we have',
+      bucketGenres('house', taxonomy).map((g) => g.id).join() === 'a,b');
+    check('drum & bass bucket includes jungle, not techno',
+      bucketGenres('dnb', taxonomy).map((g) => g.id).join() === 'c,d');
+    check('hip hop bucket matches hip hop', bucketGenres('hiphop', taxonomy).map((g) => g.id).join() === 'e');
+
+    const probeOk = (url: string, candidates = 6): ProbeResult => ({
+      target: url, method: 'html', candidates,
+      bot: { ok: true, status: 200, code: null, detail: null, ms: 10 },
+      browser: { ok: true, status: 200, code: null, detail: null, ms: 10 },
+    });
+    check('a probe with event links passes', probePassed(probeOk('https://x.example/events')));
+    check('a probe with no event links does not', !probePassed(probeOk('https://x.example/events', 0)));
+    check('a client-rendered page does not',
+      !probePassed({ ...probeOk('https://x.example/events', 2), clientRendered: true }));
+
+    await q(`delete from source_suggestions`);
+    await q(`delete from source_suggestion_searches`);
+    await q(`insert into event_sources (source_type, name, url, country)
+             values ('venue_website', 'Already Monitored', 'https://known.example/events', 'Suggestland')`);
+    await q(`insert into source_suggestion_countries (country) values ('Extraland') on conflict do nothing`);
+    for (const name of ['House', 'Drum & Bass', 'Hip Hop']) {
+      await q(`insert into genres (name, slug) values ($1, $2) on conflict do nothing`,
+        [name, name.toLowerCase().replace(/[^a-z]+/g, '-')]);
+    }
+
+    // Every call proposes: one we already monitor, one festival (not a
+    // promoter or club), one that fails its test, and four good ones.
+    let calls = 0;
+    const prompts: string[] = [];
+    const client: DiscoveryClient = {
+      available: true,
+      async propose({ user }) {
+        calls++;
+        prompts.push(user);
+        const n = calls;
+        return { ok: true, model: 'fake', text: JSON.stringify({ candidates: [
+          { name: 'Known', url: 'https://www.known.example/whats-on', kind: 'venue_website' },
+          { name: 'Fest', url: `https://fest${n}.example/lineup`, kind: 'festival_website' },
+          { name: 'Broken', url: `https://broken${n}.example/events`, kind: 'promoter_website' },
+          ...[1, 2, 3, 4].map((i) => ({
+            name: `Club ${n}-${i}`, url: `https://club${n}-${i}.example/events`,
+            kind: i % 2 ? 'venue_website' : 'promoter_website', city: 'Testville', genres: ['House'],
+          })),
+        ] }) };
+      },
+    };
+    const probed: string[] = [];
+    const probe = async (url: string) => {
+      probed.push(url);
+      return url.includes('broken') ? probeOk(url, 0) : probeOk(url);
+    };
+    let clock = 0;
+    const at = new Date('2026-10-01T07:12:00Z');
+    const first = await runMonthlySuggestions({ client, probe, now: () => clock, notify: false }, at);
+    const rows = await q(`select genre_key, host, kind, status from source_suggestions where batch_month = '2026-10'`);
+    const per = (k: string) => rows.filter((r: { genre_key: string }) => r.genre_key === k).length;
+    check('five suggestions per genre', per('dnb') === 5 && per('house') === 5 && per('hiphop') === 5,
+      JSON.stringify(first.buckets));
+    check('a site we already monitor is never suggested',
+      !rows.some((r: { host: string }) => r.host === 'known.example') && !probed.some((u) => u.includes('known.example')));
+    check('only promoters and clubs are suggested',
+      rows.every((r: { kind: string }) => ['venue_website', 'promoter_website'].includes(r.kind)));
+    check('a site that fails the scanner test is not suggested',
+      !rows.some((r: { host: string }) => r.host.startsWith('broken')));
+    check('a genre that runs short moves on to the next country', first.buckets.every((b) => b.countries.length === 2));
+    check('the prompt names the genre bucket', prompts.some((p) => /Drum & Bass/.test(p)) && prompts.some((p) => /Hip Hop/.test(p)));
+    const searched = await q(`select distinct country from source_suggestion_searches`);
+    check('searches are logged per country for the rotation', searched.length >= 2);
+
+    // A second run in the same month has nothing to do and asks no one.
+    const before = calls;
+    const again = await runMonthlySuggestions({ client, probe, now: () => clock, notify: false }, at);
+    check('a full month is a no-op: no AI calls, nothing added',
+      calls === before && again.buckets.every((b) => b.added === 0));
+
+    // The admins hear about it once a month, however many runs there are.
+    const admins = await q(`select count(*)::int as n from members where role = 'admin'`);
+    const mailed = await runMonthlySuggestions({ client, probe, now: () => clock, notify: true }, at);
+    const twice = await runMonthlySuggestions({ client, probe, now: () => clock, notify: true }, at);
+    const outbox = await q(`select count(*)::int as n from email_outbox where email_type = 'notification:source_suggestions'`);
+    check('a full batch emails every admin, once',
+      admins[0].n > 0 && mailed.emailed === admins[0].n && twice.emailed === 0 && outbox[0].n === admins[0].n,
+      `admins=${admins[0].n} emailed=${mailed.emailed}/${twice.emailed} outbox=${outbox[0].n}`);
+
+    // Dismissed stays dismissed — next month never brings it back.
+    await q(`update source_suggestions set status = 'dismissed' where host = 'club1-1.example'`);
+    const replay: DiscoveryClient = {
+      available: true,
+      async propose() {
+        return { ok: true, model: 'fake', text: JSON.stringify({ candidates: [
+          { name: 'Club 1-1', url: 'https://club1-1.example/events', kind: 'venue_website' },
+        ] }) };
+      },
+    };
+    await runMonthlySuggestions({ client: replay, probe, now: () => clock, notify: false }, new Date('2026-11-01T07:12:00Z'));
+    const nov = await q(`select host from source_suggestions where batch_month = '2026-11'`);
+    check('a dismissed site is never suggested again', nov.length === 0);
+
+    // Out of time: stops cleanly and leaves the rest for the next run.
+    await q(`delete from source_suggestions where batch_month = '2026-12'`);
+    let t = 0;
+    const slow = await runMonthlySuggestions(
+      { client, probe: async (u) => { t += 100_000; return probe(u); }, now: () => t, notify: false },
+      new Date('2026-12-01T07:12:00Z'));
+    check('a run that runs out of time stops early and says so', slow.outOfTime);
+
+    const noKey = await runMonthlySuggestions(
+      { client: { available: false, async propose() { return { ok: false, detail: 'no key' }; } },
+        probe, now: () => 0, notify: false }, new Date('2027-01-01T07:12:00Z'));
+    check('no API key is reported, not hidden',
+      noKey.buckets.every((b) => b.added === 0 && b.errors.length === 1));
+
+    const mail = suggestionsEmail('2026-10', [
+      { genre_key: 'house', name: 'Club <Five>', url: 'https://five.example/events', kind: 'venue_website',
+        city: 'Testville', country: 'Suggestland', candidates: 6 },
+    ], 'https://www.guestlist.net/admin/sources#suggestions');
+    check('the email names the month and the club',
+      /October 2026/.test(mail.subject) && mail.bodyText.includes('Club <Five>'));
+    check('the email escapes names in HTML', mail.bodyHtml.includes('Club &lt;Five&gt;'));
+    check('hostOf ignores www', hostOf('https://www.Club.example/x') === 'club.example');
   }
 
   // -------------------------------------------------------------------------

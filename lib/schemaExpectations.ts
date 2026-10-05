@@ -47,6 +47,9 @@ export const MIGRATION_FILES: string[] = [
   '040_retreats.sql',
   '041_signed_in.sql',
   '042_lock_the_data_api.sql',
+  '043_where_they_came_from.sql',
+  '044_market_other_category.sql',
+  '045_source_suggestions.sql',
 ];
 
 export const EXPECTED_TABLES: string[] = [
@@ -155,6 +158,9 @@ export const EXPECTED_TABLES: string[] = [
   'social_accounts',
   'source_scans',
   'source_seen_urls',
+  'source_suggestion_countries',
+  'source_suggestion_searches',
+  'source_suggestions',
   'system_settings',
   'travel_plans',
   'venues',
@@ -167,6 +173,8 @@ export const EXPECTED_TABLES: string[] = [
 
 // "table.column" for columns added by a later migration.
 export const EXPECTED_COLUMNS: string[] = [
+  'analytics_events.country',
+  'analytics_events.referrer_host',
   'archive_mixes.scene_entity_id',
   'email_outbox.attempt_count',
   'email_outbox.body_html',

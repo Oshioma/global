@@ -1017,9 +1017,18 @@ export async function scanDueSources(ctx: ScanContext = {}): Promise<{ scanned: 
   const runBudgetMs = ctx.budgetMs ?? supplyConfig.scan.budgetMs;
   const batch = Math.max(1, Math.min(20, Math.floor(runBudgetMs / supplyConfig.scan.minPerSourceMs)));
   const due = await query<{ id: string }>(
+    // Also: the source behind a monthly suggestion that has never been
+    // scanned. It is not polling yet — the admin decides that — but they
+    // decide by looking at the events it found, so it needs one scan first.
     `select id from event_sources
-      where active and polling_enabled and trust <> 'blocked'
-        and (last_checked_at is null or last_checked_at < now() - make_interval(hours => poll_frequency_hours))
+      where active and trust <> 'blocked'
+        and (
+          (polling_enabled
+            and (last_checked_at is null or last_checked_at < now() - make_interval(hours => poll_frequency_hours)))
+          or (last_checked_at is null
+            and id in (select source_id from source_suggestions
+                        where status = 'pending' and source_id is not null))
+        )
       order by last_checked_at asc nulls first
       limit $1`,
     [batch]

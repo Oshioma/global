@@ -21,6 +21,7 @@
 // every entry point swallows its own errors and says so in the log.
 
 import { query, queryOne } from './db';
+import { heldForSuggestionSql } from './adminEvents';
 
 export type ReviewQueue = {
   events: number;
@@ -52,9 +53,12 @@ async function count(sql: string): Promise<number> {
 // the admin dashboard panel and the tests all read it, so they cannot drift.
 export async function reviewQueue(): Promise<ReviewQueue> {
   const [events, articles, claims, corrections, reports, genreSuggestions, accessRequests, marketApplications] = await Promise.all([
-    count(`select count(*)::int as n from events
-            where status in ('new', 'needs_review')
-              and coalesce(end_at, start_at + interval '6 hours') > now()`),
+    // Events waiting under an undecided source suggestion are decided on
+    // /admin/sources, not in the queue, so they are not counted here.
+    count(`select count(*)::int as n from events e
+            where e.status in ('new', 'needs_review')
+              and coalesce(e.end_at, e.start_at + interval '6 hours') > now()
+              and not ${heldForSuggestionSql('e')}`),
     count(`select count(*)::int as n from articles where status = 'submitted'`),
     count(`select count(*)::int as n from promoter_claims where status = 'pending'`),
     count(`select count(*)::int as n from archive_corrections where status = 'open'`),

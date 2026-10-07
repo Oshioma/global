@@ -42,6 +42,8 @@ import { isLiveSource } from '@/lib/supply/health';
 import { findListingLink, previewBody } from '@/lib/supply/probe';
 import { testVerdict, type ProbeResult } from '@/lib/supply/verdict';
 import { purgeFinishedUnpublished, publishQueue } from '@/lib/adminEvents';
+import { pollSuggestion, dismissSuggestion } from '@/lib/supply/suggest';
+import { heldForSuggestionSql } from '@/lib/adminEvents';
 import { runMonthlySuggestions, bucketGenres, probePassed, suggestionsEmail, hostOf } from '@/lib/supply/suggest';
 import { fetcherFor, renderingConfigured } from '@/lib/supply/render';
 import { parse } from 'node-html-parser';
@@ -1133,6 +1135,12 @@ async function main() {
 
     // Every call proposes: one we already monitor, one festival (not a
     // promoter or club), one that fails its test, and four good ones.
+    // Stands in for a real scan: marks the source scanned, as the scanner does.
+    const scannedSources: string[] = [];
+    const noScan = async (sourceId: string) => {
+      scannedSources.push(sourceId);
+      await q(`update event_sources set last_checked_at = now() where id = $1`, [sourceId]);
+    };
     let calls = 0;
     const prompts: string[] = [];
     const client: DiscoveryClient = {
@@ -1159,7 +1167,7 @@ async function main() {
     };
     let clock = 0;
     const at = new Date('2026-10-01T07:12:00Z');
-    const first = await runMonthlySuggestions({ client, probe, now: () => clock, notify: false }, at);
+    const first = await runMonthlySuggestions({ client, probe, now: () => clock, notify: false, scan: noScan }, at);
     const rows = await q(`select genre_key, host, kind, status from source_suggestions where batch_month = '2026-10'`);
     const per = (k: string) => rows.filter((r: { genre_key: string }) => r.genre_key === k).length;
     check('five suggestions per genre', per('dnb') === 5 && per('house') === 5 && per('hiphop') === 5,
@@ -1184,14 +1192,14 @@ async function main() {
 
     // A second run in the same month has nothing to do and asks no one.
     const before = calls;
-    const again = await runMonthlySuggestions({ client, probe, now: () => clock, notify: false }, at);
+    const again = await runMonthlySuggestions({ client, probe, now: () => clock, notify: false, scan: noScan }, at);
     check('a full month is a no-op: no AI calls, nothing added',
       calls === before && again.buckets.every((b) => b.added === 0));
 
     // The admins hear about it once a month, however many runs there are.
     const admins = await q(`select count(*)::int as n from members where role = 'admin'`);
-    const mailed = await runMonthlySuggestions({ client, probe, now: () => clock, notify: true }, at);
-    const twice = await runMonthlySuggestions({ client, probe, now: () => clock, notify: true }, at);
+    const mailed = await runMonthlySuggestions({ client, probe, now: () => clock, notify: true, scan: noScan }, at);
+    const twice = await runMonthlySuggestions({ client, probe, now: () => clock, notify: true, scan: noScan }, at);
     const outbox = await q(`select count(*)::int as n from email_outbox where email_type = 'notification:source_suggestions'`);
     check('a full batch emails every admin, once',
       admins[0].n > 0 && mailed.emailed === admins[0].n && twice.emailed === 0 && outbox[0].n === admins[0].n,
@@ -1207,7 +1215,7 @@ async function main() {
         ] }) };
       },
     };
-    await runMonthlySuggestions({ client: replay, probe, now: () => clock, notify: false }, new Date('2026-11-01T07:12:00Z'));
+    await runMonthlySuggestions({ client: replay, probe, now: () => clock, notify: false, scan: noScan }, new Date('2026-11-01T07:12:00Z'));
     const nov = await q(`select host from source_suggestions where batch_month = '2026-11'`);
     check('a dismissed site is never suggested again', nov.length === 0);
 
@@ -1215,7 +1223,7 @@ async function main() {
     await q(`delete from source_suggestions where batch_month = '2026-12'`);
     let t = 0;
     const slow = await runMonthlySuggestions(
-      { client, probe: async (u) => { t += 100_000; return probe(u); }, now: () => t, notify: false },
+      { client, probe: async (u) => { t += 100_000; return probe(u); }, now: () => t, notify: false, scan: noScan },
       new Date('2026-12-01T07:12:00Z'));
     check('a run that runs out of time stops early and says so', slow.outOfTime);
 
@@ -1227,21 +1235,88 @@ async function main() {
       async propose(input) { tick += 70_000; return client.propose(input); },
     };
     const fair = await runMonthlySuggestions(
-      { client: slowClient, probe, now: () => tick, notify: false }, new Date('2027-02-01T07:12:00Z'));
+      { client: slowClient, probe, now: () => tick, notify: false, scan: noScan }, new Date('2027-02-01T07:12:00Z'));
     check('a short run still searches every genre once',
       fair.outOfTime && fair.buckets.every((b) => b.countries.length === 1), JSON.stringify(fair.buckets));
 
     // Next month, hip hop moves on to a city it has not searched yet.
-    const march = await runMonthlySuggestions({ client, probe, now: () => 0, notify: false }, new Date('2027-03-01T07:12:00Z'));
+    const march = await runMonthlySuggestions({ client, probe, now: () => 0, notify: false, scan: noScan }, new Date('2027-03-01T07:12:00Z'));
     const marchCities = march.buckets.find((b) => b.key === 'hiphop')!.countries;
     check('hip hop rotates to cities it has not searched yet',
       marchCities.length > 0 && !marchCities.some((c) => hipHop.countries.includes(c)), marchCities.join(' | '));
 
     const noKey = await runMonthlySuggestions(
       { client: { available: false, async propose() { return { ok: false, detail: 'no key' }; } },
-        probe, now: () => 0, notify: false }, new Date('2027-01-01T07:12:00Z'));
+        probe, now: () => 0, notify: false, scan: noScan }, new Date('2027-01-01T07:12:00Z'));
     check('no API key is reported, not hidden',
       noKey.buckets.every((b) => b.added === 0 && b.errors.length === 1));
+
+    // ---- added and scanned for you; Poll and Dismiss decide ----------------
+    const octSources = await q(
+      `select ss.id, ss.source_id, src.polling_enabled, src.active
+         from source_suggestions ss left join event_sources src on src.id = ss.source_id
+        where ss.batch_month = '2026-10' and ss.status = 'pending' order by ss.created_at`);
+    check('every suggestion gets a source straight away',
+      octSources.length > 0 && octSources.every((r: { source_id: string | null }) => !!r.source_id));
+    check('…switched on but not polling until someone decides',
+      octSources.every((r: { polling_enabled: boolean; active: boolean }) => r.active && !r.polling_enabled));
+    check('the run scans the new suggestions with the time it has left',
+      octSources.every((r: { source_id: string }) => scannedSources.includes(r.source_id)));
+
+    // Events a suggestion's source found are held out of the review queue.
+    const [keep, toss] = octSources as { id: string; source_id: string }[];
+    const otherSrc = (await q(`select id from event_sources where url = 'https://known.example/events'`))[0].id;
+    const evFor = async (slug: string, sourceIds: string[], dupOf: string | null = null) => {
+      const id = (await q(
+        `insert into events (slug, title, title_normalized, start_at, timezone, status, city, country, possible_duplicate_of)
+         values ($1, $1, $1, now() + interval '12 days', 'Europe/London', 'new', 'Leeds', 'United Kingdom', $2)
+         returning id`, [slug, dupOf]))[0].id as string;
+      for (const sid of sourceIds) {
+        await q(`insert into event_source_links (event_id, source_id, url, kind) values ($1, $2, $3, 'source_scan')`,
+          [id, sid, `https://x.example/${slug}/${sid}`]);
+      }
+      return id;
+    };
+    const held = await evFor('sugg-held', [keep.source_id]);
+    const heldDup = await evFor('sugg-held-dup', [keep.source_id], held);
+    const shared = await evFor('sugg-shared', [toss.source_id, otherSrc]);
+    const tossOnly = await evFor('sugg-toss-only', [toss.source_id]);
+    const isHeld = async (id: string) =>
+      (await q(`select ${heldForSuggestionSql('e')} as h from events e where e.id = $1`, [id]))[0].h;
+    check('an event only a pending suggestion found is held out of the queue', await isHeld(held));
+    check('an event another source also lists is not held', !(await isHeld(shared)));
+    const admin2 = (await q(`select id from members where role = 'admin' limit 1`))[0].id;
+    await publishQueue('new', admin2);
+    const statusOf = async (id: string) =>
+      (await q(`select status::text from events where id = $1`, [id]))[0]?.status;
+    check('publish all does not publish an undecided suggestion’s events', (await statusOf(held)) === 'new');
+
+    // Poll: on the schedule, and its events published — bar duplicates.
+    const polled = await pollSuggestion(keep.id, admin2);
+    const keptSrc = (await q(`select polling_enabled from event_sources where id = $1`, [keep.source_id]))[0];
+    check('ticking Poll puts the source on the schedule', polled.ok && keptSrc.polling_enabled);
+    check('…and publishes the events it found', (await statusOf(held)) === 'live' && polled.ok && polled.published === 1);
+    check('…but a possible duplicate still waits for a person', (await statusOf(heldDup)) === 'new');
+    check('…and the suggestion is marked as kept',
+      (await q(`select status from source_suggestions where id = $1`, [keep.id]))[0].status === 'added');
+    check('a decided suggestion cannot be polled twice', !(await pollSuggestion(keep.id, admin2)).ok);
+    // Added before Poll existed, never put on the schedule: still pollable.
+    const older = (octSources as { id: string; source_id: string }[])[2];
+    await q(`update source_suggestions set status = 'added' where id = $1`, [older.id]);
+    const late = await pollSuggestion(older.id, admin2);
+    check('an added suggestion that never polled can still be ticked',
+      late.ok && (await q(`select polling_enabled from event_sources where id = $1`, [older.source_id]))[0].polling_enabled);
+
+    // Dismiss: the source goes, and the events only it brought in.
+    const dismissed = await dismissSuggestion(toss.id, admin2);
+    check('dismiss deletes the events only that source found',
+      dismissed.ok && dismissed.deletedEvents === 1 && (await statusOf(tossOnly)) === undefined);
+    check('…but keeps an event another source also lists', (await statusOf(shared)) !== undefined);
+    check('…and deletes the source',
+      (await q(`select count(*)::int as n from event_sources where id = $1`, [toss.source_id]))[0].n === 0);
+    check('…while the suggestion stays, so the site is never suggested again',
+      (await q(`select status from source_suggestions where id = $1`, [toss.id]))[0].status === 'dismissed');
+    await q(`delete from events where slug like 'sugg-%'`);
 
     const mail = suggestionsEmail('2026-10', [
       { genre_key: 'house', name: 'Club <Five>', url: 'https://five.example/events', kind: 'venue_website',

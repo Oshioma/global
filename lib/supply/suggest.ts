@@ -1,12 +1,14 @@
 // MONTHLY SOURCE SUGGESTIONS: five drum & bass, five house and five hip hop
 // promoters or clubs a month that are not sources yet, waiting on
-// /admin/sources for an admin to Add or Dismiss.
+// /admin/sources for an admin to tick Poll or Dismiss.
 //
 // This is the discovery workbench run on a schedule, with the same rule:
 // nothing a model says is believed. A candidate is only kept once we have
 // fetched its listing page ourselves and the scanner found event links on it
 // — so what lands in the panel has already passed the "Test" step an admin
-// would otherwise do by hand. It is still never added on its own.
+// would otherwise do by hand. Each one is then added as a source that is
+// not polling and scanned, so the panel shows the events it lists; it only
+// goes on the schedule when an admin ticks Poll.
 //
 // Places rotate: drum & bass and house search the countries we already have
 // sources in (plus any added to the short list on the panel), hip hop searches
@@ -24,6 +26,10 @@ import {
   type DiscoveryClient, type SourceCandidate,
 } from './discover';
 import { probeTarget } from './probe';
+import { scanSource } from './scanner';
+import { onEventPublished } from '@/lib/alerts';
+import { audit } from '@/lib/audit';
+import { matchGenreIdsByName } from '@/lib/util';
 import { testVerdict, type ProbeResult } from './verdict';
 
 export const SUGGESTIONS_PER_GENRE = 5;
@@ -103,6 +109,8 @@ export function probePassed(r: ProbeResult): boolean {
 export type SuggestDeps = {
   client: DiscoveryClient;
   probe: (url: string) => Promise<ProbeResult>;
+  // Scans a suggestion's source so the panel can show what it found.
+  scan: (sourceId: string, budgetMs: number) => Promise<unknown>;
   now: () => number;
   notify: boolean;
 };
@@ -118,6 +126,7 @@ export type BucketResult = {
 export type SuggestResult = {
   month: string;
   buckets: BucketResult[];
+  scanned: number;
   emailed: number;
   outOfTime: boolean;
 };
@@ -125,6 +134,7 @@ export type SuggestResult = {
 const defaultDeps = (): SuggestDeps => ({
   client: defaultDiscoveryClient(),
   probe: (url) => probeTarget(url, { findListingOnMiss: true }),
+  scan: (sourceId, budgetMs) => scanSource(sourceId, { budgetMs }),
   now: () => Date.now(),
   notify: true,
 });
@@ -183,6 +193,8 @@ export async function runMonthlySuggestions(
   const genres = await query<{ id: string; name: string }>(
     `select id, name from genres where active order by name`
   );
+  // Suggestions saved before sources were added automatically get theirs now.
+  await ensurePendingSources();
 
   // Never suggest something we already monitor, or anything suggested before
   // (a dismissed site stays dismissed).
@@ -272,6 +284,10 @@ export async function runMonthlySuggestions(
     }
   }
 
+  // Whatever time is left goes on scanning the suggestions nobody has seen
+  // events for yet. The scheduled scan (every six hours) picks up the rest.
+  const scanned = await scanUnscannedSuggestions(deps, () => left() - SCAN_RESERVE_MS);
+
   let emailed = 0;
   if (deps.notify) {
     const full = buckets.length === GENRE_BUCKETS.length
@@ -279,7 +295,7 @@ export async function runMonthlySuggestions(
     if (full || at.getUTCDate() >= LAST_RUN_DAY) emailed = await emailAdmins(month);
   }
 
-  return { month, buckets, emailed, outOfTime };
+  return { month, buckets, scanned, emailed, outOfTime };
 }
 
 async function logSearch(
@@ -315,7 +331,180 @@ async function saveSuggestion(
      own.length ? own : c.genres.length ? c.genres : [genreLabel(key)],
      c.note, probe.candidates ?? 0, testVerdict(probe).text.slice(0, 500)]
   );
+  if (row) await ensureSuggestionSource(row.id);
   return !!row;
+}
+
+// --- Sources for suggestions ---------------------------------------------------
+//
+// A suggestion gets a real source straight away — switched on, NOT polling —
+// so it can be scanned and the panel can show the events it actually lists.
+// Until an admin decides, that source stays out of the workbench and its
+// events stay out of the review queues (heldForSuggestionSql). Ticking Poll
+// puts it on the schedule and publishes those events; Dismiss deletes both.
+
+const SCAN_RESERVE_MS = 15_000;
+const MIN_MS_FOR_SCAN = 45_000;
+const MAX_MS_PER_SCAN = 120_000;
+
+export async function ensureSuggestionSource(suggestionId: string): Promise<string | null> {
+  const s = await queryOne<{
+    id: string; genre_key: GenreKey; name: string; url: string; kind: string;
+    city: string | null; country: string | null; genres: string[]; note: string | null;
+    source_id: string | null;
+  }>(
+    `select id, genre_key, name, url, kind, city, country, genres, note, source_id
+       from source_suggestions where id = $1`,
+    [suggestionId]
+  );
+  if (!s) return null;
+  if (s.source_id) return s.source_id;
+
+  const existing = await queryOne<{ id: string }>(`select id from event_sources where url = $1`, [s.url]);
+  let sourceId = existing?.id ?? null;
+  if (!sourceId) {
+    const created = await queryOne<{ id: string }>(
+      `insert into event_sources (source_type, name, url, notes, city, country)
+       values ($1, $2, $3, $4, $5, $6) returning id`,
+      [s.kind, s.name, s.url, s.note, s.city, s.country]
+    );
+    sourceId = created!.id;
+    const genres = await query<{ id: string; name: string }>(`select id, name from genres where active`);
+    let genreIds = matchGenreIdsByName(s.genres, genres);
+    if (!genreIds.length) genreIds = bucketGenres(s.genre_key, genres).map((g) => g.id).slice(0, 1);
+    if (genreIds.length) {
+      await query(
+        `insert into event_source_genres (source_id, genre_id)
+         select $1, g.id from genres g where g.id = any($2::uuid[])
+         on conflict do nothing`,
+        [sourceId, genreIds]
+      );
+    }
+  }
+  await query(`update source_suggestions set source_id = $2 where id = $1`, [suggestionId, sourceId]);
+  return sourceId;
+}
+
+export async function ensurePendingSources() {
+  const rows = await query<{ id: string }>(
+    `select id from source_suggestions where status = 'pending' and source_id is null`
+  );
+  for (const r of rows) await ensureSuggestionSource(r.id);
+}
+
+// Pending suggestions whose source has never been scanned, oldest first.
+async function scanUnscannedSuggestions(deps: SuggestDeps, left: () => number): Promise<number> {
+  const rows = await query<{ source_id: string }>(
+    `select ss.source_id
+       from source_suggestions ss join event_sources src on src.id = ss.source_id
+      where ss.status = 'pending' and src.last_checked_at is null
+      order by ss.created_at`
+  );
+  let scanned = 0;
+  for (const r of rows) {
+    const budget = left();
+    if (budget < MIN_MS_FOR_SCAN) break;
+    try {
+      await deps.scan(r.source_id, Math.min(budget, MAX_MS_PER_SCAN));
+      scanned++;
+    } catch {
+      /* the scan row records its own failure */
+    }
+  }
+  return scanned;
+}
+
+// POLL: put the source on the schedule and publish what it has already found
+// — its upcoming events, except anything flagged as a possible duplicate,
+// which still waits in Needs Review for a person.
+export async function pollSuggestion(
+  suggestionId: string, adminId: string
+): Promise<{ ok: true; sourceId: string; published: number } | { ok: false; error: string }> {
+  const s = await queryOne<{ status: string; polling: boolean | null }>(
+    `select ss.status, src.polling_enabled as polling
+       from source_suggestions ss left join event_sources src on src.id = ss.source_id
+      where ss.id = $1`,
+    [suggestionId]
+  );
+  if (!s) return { ok: false, error: 'Suggestion not found' };
+  // An 'added' suggestion whose source never went on the schedule (added
+  // before Poll existed) can still be polled; anything else is decided.
+  const pollable = s.status === 'pending' || (s.status === 'added' && s.polling === false);
+  if (!pollable) return { ok: false, error: s.status === 'added' ? 'Already polling' : `Already ${s.status}` };
+  const sourceId = await ensureSuggestionSource(suggestionId);
+  if (!sourceId) return { ok: false, error: 'Suggestion not found' };
+
+  await query(
+    `update event_sources set active = true, polling_enabled = true, updated_at = now() where id = $1`,
+    [sourceId]
+  );
+  await query(
+    `update source_suggestions
+        set status = 'added', decided_at = coalesce(decided_at, now()),
+            decided_by = coalesce(decided_by, $2)
+      where id = $1`,
+    [suggestionId, adminId]
+  );
+  const published = await query<{ id: string }>(
+    `update events e
+        set status = 'live'::event_status,
+            published_at = coalesce(e.published_at, now()),
+            updated_at = now()
+      where e.status in ('new', 'needs_review')
+        and e.possible_duplicate_of is null
+        and coalesce(e.end_at, e.start_at + interval '6 hours') > now()
+        and exists (select 1 from event_source_links l where l.event_id = e.id and l.source_id = $1)
+      returning e.id`,
+    [sourceId]
+  );
+  if (published.length) {
+    await audit('events_bulk_published', {
+      actorId: adminId, sourceId,
+      detail: { via: 'source_suggestion', count: published.length },
+    });
+    for (const e of published) await onEventPublished(e.id);
+  }
+  return { ok: true, sourceId, published: published.length };
+}
+
+// DISMISS: the suggestion stays (so the site is never suggested again), the
+// source goes, and so do the unpublished events that only it brought in.
+export async function dismissSuggestion(
+  suggestionId: string, adminId: string
+): Promise<{ ok: true; deletedEvents: number } | { ok: false; error: string }> {
+  const s = await queryOne<{ status: string; source_id: string | null }>(
+    `select status, source_id from source_suggestions where id = $1`, [suggestionId]
+  );
+  if (!s) return { ok: false, error: 'Suggestion not found' };
+  if (s.status !== 'pending') return { ok: false, error: `Already ${s.status}` };
+
+  let deletedEvents = 0;
+  if (s.source_id) {
+    const gone = await query<{ id: string }>(
+      `delete from events e
+        where e.status in ('new', 'needs_review')
+          and exists (select 1 from event_source_links l where l.event_id = e.id and l.source_id = $1)
+          and not exists (select 1 from event_source_links l
+                           where l.event_id = e.id and (l.source_id is null or l.source_id <> $1))
+        returning e.id`,
+      [s.source_id]
+    );
+    deletedEvents = gone.length;
+    // A source that already polls was somebody's decision, so it stays.
+    // Deleting one never deletes a published event — its link to the source
+    // is just let go.
+    await query(
+      `delete from event_sources where id = $1 and not polling_enabled`,
+      [s.source_id]
+    );
+  }
+  await query(
+    `update source_suggestions
+        set status = 'dismissed', decided_at = now(), decided_by = $2
+      where id = $1`,
+    [suggestionId, adminId]
+  );
+  return { ok: true, deletedEvents };
 }
 
 // --- The email ---------------------------------------------------------------
@@ -340,8 +529,8 @@ export function suggestionsEmail(month: string, rows: PendingRow[], link: string
   const bodyText = [
     `This month's source suggestions are ready (${monthName}).`,
     '',
-    'Each one has already been fetched and tested against the scanner.',
-    'Nothing is added until you press Add.',
+    'Each one is scanned for you, so the page shows the events it lists. Tick Poll',
+    'on the ones to keep: they go on the schedule and those events are published.',
     '',
     ...groups.flatMap((g) => [
       g.label.toUpperCase(),
@@ -358,8 +547,8 @@ export function suggestionsEmail(month: string, rows: PendingRow[], link: string
           Source suggestions for ${esc(monthName)}
         </div>
         <div style="font-size:14.5px;color:${BRAND.soft};margin-top:14px;line-height:1.65;">
-          Each one has already been fetched and tested against the scanner.
-          Nothing is added until you press Add.
+          Each one is scanned for you, so the page shows the events it lists — tick
+          Poll on the ones to keep, and those events are published.
         </div>`, '24px 26px 0'),
       ...groups.map((g) => row(`<div style="font-size:10.5px;font-weight:800;letter-spacing:2.2px;color:${BRAND.gold};text-transform:uppercase;">${esc(g.label)}</div>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">

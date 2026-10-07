@@ -118,11 +118,36 @@ export default async function SourcesPage({
   const month = monthKey();
   const [suggestions, extraCountries] = await Promise.all([
     query<SuggestionRow>(
-      `select id, batch_month, genre_key, name, url, kind, city, country, note,
-              candidates, verdict, status, source_id
-         from source_suggestions
-        where status = 'pending' or batch_month = $1
-        order by (status = 'pending') desc, created_at desc`,
+      // Each suggestion carries its source's latest scan and the upcoming
+      // events that source has found, so the decision is made right here.
+      `select ss.id, ss.batch_month, ss.genre_key, ss.name, ss.url, ss.kind, ss.city, ss.country,
+              ss.note, ss.candidates, ss.verdict, ss.status, ss.source_id,
+              coalesce(src.polling_enabled, false) as polling,
+              sc.status as scan_status, sc.error as scan_error, sc.started_at::text as scanned_at,
+              coalesce(ev.upcoming, 0) as upcoming,
+              coalesce(ev.events, '[]'::json) as events
+         from source_suggestions ss
+         left join event_sources src on src.id = ss.source_id
+         left join lateral (
+           select x.status, x.error, x.started_at from source_scans x
+            where x.source_id = ss.source_id order by x.started_at desc limit 1
+         ) sc on true
+         left join lateral (
+           select count(*)::int as upcoming,
+                  (json_agg(json_build_object(
+                     'id', e.id, 'title', e.title, 'start_at', e.start_at, 'timezone', e.timezone,
+                     'city', e.city, 'duplicate', e.possible_duplicate_of is not null)
+                   order by e.start_at) filter (where e.rn <= 8)) as events
+             from (select e.*, row_number() over (order by e.start_at) as rn
+                     from events e
+                    where e.status in ('new', 'needs_review', 'live')
+                      and coalesce(e.end_at, e.start_at + interval '6 hours') > now()
+                      and exists (select 1 from event_source_links l
+                                   where l.event_id = e.id and l.source_id = ss.source_id)) e
+         ) ev on true
+        where ss.status = 'pending' or ss.batch_month = $1
+           or (ss.status = 'added' and not coalesce(src.polling_enabled, false))
+        order by (ss.status = 'pending') desc, ss.created_at desc`,
       [month]
     ).catch(() => [] as SuggestionRow[]),
     query<{ country: string }>(
@@ -134,9 +159,13 @@ export default async function SourcesPage({
   )];
 
   // The bench and the live list are two different jobs, so each tab counts
-  // and filters only its own sources.
+  // and filters only its own sources. A source behind a suggestion nobody has
+  // decided on yet lives in the suggestions panel, not on the bench.
+  const undecided = new Set(
+    suggestions.filter((s) => s.status === 'pending' && s.source_id).map((s) => s.source_id!)
+  );
   const liveSources = sources.filter(isLiveSource);
-  const benchSources = sources.filter((s) => !isLiveSource(s));
+  const benchSources = sources.filter((s) => !isLiveSource(s) && !undecided.has(s.id));
   const inView = view === 'live' ? liveSources : benchSources;
 
   // Country chips carry counts from the FULL set of the current tab, so the

@@ -287,6 +287,22 @@ export type PublishAllResult = {
   remaining: number;
 };
 
+// HELD FOR A SUGGESTION: an event that came in only through a monthly source
+// suggestion nobody has decided on yet. It is shown under that suggestion on
+// /admin/sources, and ticking Poll there publishes it — so it is kept out of
+// the review queues, and out of Publish all, until then. An event that ANY
+// other source also lists is an ordinary event and is not held.
+export function heldForSuggestionSql(alias = 'e'): string {
+  return `(exists (select 1 from event_source_links hl
+                   join source_suggestions hs on hs.source_id = hl.source_id and hs.status = 'pending'
+                  where hl.event_id = ${alias}.id)
+          and not exists (select 1 from event_source_links ol
+                           where ol.event_id = ${alias}.id
+                             and (ol.source_id is null or ol.source_id not in (
+                                   select source_id from source_suggestions
+                                    where status = 'pending' and source_id is not null))))`;
+}
+
 // The SQL that says an event is over: its end, or six hours after its start
 // when it has no end. One definition, used by the purge and the queue pages.
 export const FINISHED_SQL = `coalesce(end_at, start_at + interval '6 hours') <= now()`;
@@ -330,8 +346,9 @@ export async function publishQueue(
   const purgedPast = await purgeFinishedUnpublished(adminId);
 
   const queue = await query<{ id: string; is_duplicate: boolean }>(
-    `select id, possible_duplicate_of is not null as is_duplicate
-       from events where status = $1::event_status`,
+    `select e.id, e.possible_duplicate_of is not null as is_duplicate
+       from events e
+      where e.status = $1::event_status and not ${heldForSuggestionSql('e')}`,
     [state]
   );
   const publishable = queue.filter((e) => !e.is_duplicate);

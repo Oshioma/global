@@ -51,6 +51,7 @@ export const MIGRATION_FILES: string[] = [
   '044_market_other_category.sql',
   '045_source_suggestions.sql',
   '046_suggestion_search_city.sql',
+  '047_event_finished_outcome.sql',
 ];
 
 export const EXPECTED_TABLES: string[] = [

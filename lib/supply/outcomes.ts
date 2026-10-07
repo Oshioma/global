@@ -15,6 +15,7 @@ const MEANING: Record<string, string> = {
   duplicate_linked: 'already in Guestlist — linked to this source',
   not_an_event: 'not an event page (a listing index, a ticket shop, an article)',
   not_relevant: 'an event, but not music we cover',
+  event_finished: 'an event that has already happened',
   insufficient_information: 'an event page, but no usable date on it',
   invalid_date: 'a date we could not make sense of',
   ai_extraction_failed: 'the AI reader failed — check ANTHROPIC_API_KEY and the model name',

@@ -383,6 +383,19 @@ export async function runExtractionPipeline(
   }
   if (startAt.getTime() < Date.now() - 86400_000) warnings.push('event date is in the past');
 
+  // ALREADY OVER: a listing page full of last month's nights is the commonest
+  // thing a scan reads, and every one used to land in Needs Review for an
+  // admin to step over. Nobody can go to it, so it is recorded and dropped
+  // here, before a venue or promoter is created on its account. Reprocessing
+  // an event an admin is already holding is left alone.
+  const finishesAt = endAt ?? new Date(startAt.getTime() + 6 * 3600_000);
+  if (!ctx.reprocessEventId && finishesAt.getTime() <= Date.now()) {
+    return fail('event_finished', 'The event has already happened', {
+      ...metricsExtra,
+      payload: JSON.stringify({ title, start_at: startAt.toISOString(), city, country }),
+    });
+  }
+
   // ---- genre mapping -----------------------------------------------------
   const taxonomy = await loadGenres();
   const mapping = mapGenreProposals(genreProposals, taxonomy);

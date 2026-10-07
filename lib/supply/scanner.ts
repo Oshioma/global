@@ -933,7 +933,9 @@ export async function runScan(sourceId: string, scanId: string, ctx: ScanContext
       tally(outcome.status);
       if (outcome.status === 'succeeded' || outcome.status === 'possible_duplicate') extracted++;
       else if (outcome.status === 'duplicate_linked') duplicates++;
-      else failedCount++;
+      // An event that is already over was read perfectly well; it is in the
+      // outcome tally, not counted against the source as a failure.
+      else if (outcome.status !== 'event_finished') failedCount++;
     } catch {
       tally('failed');
       failedCount++;

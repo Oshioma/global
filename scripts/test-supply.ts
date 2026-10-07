@@ -41,6 +41,7 @@ import { looksClientRendered } from '@/lib/supply/scanner';
 import { isLiveSource } from '@/lib/supply/health';
 import { findListingLink, previewBody } from '@/lib/supply/probe';
 import { testVerdict, type ProbeResult } from '@/lib/supply/verdict';
+import { purgeFinishedUnpublished, publishQueue } from '@/lib/adminEvents';
 import { runMonthlySuggestions, bucketGenres, probePassed, suggestionsEmail, hostOf } from '@/lib/supply/suggest';
 import { fetcherFor, renderingConfigured } from '@/lib/supply/render';
 import { parse } from 'node-html-parser';
@@ -1028,6 +1029,73 @@ async function main() {
     check('discovery says so when no API key is configured', !unavailable.ok && unavailable.error === 'unavailable');
     const garbled = await discoverSources(req, fake('sorry, I cannot help with that'));
     check('unparseable model output is an error, not a candidate', !garbled.ok);
+  }
+
+  // -------------------------------------------------------------------------
+  console.log('\n— finished events never clog the review queues —');
+  {
+    // A listing page full of last month's nights: read, recorded, dropped.
+    const urlP = 'https://promoter-g.example/events/last-month';
+    const lastMonth = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
+    const pastBody = `<html><head><script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'MusicEvent', name: 'Last Month Night',
+      startDate: `${lastMonth}T21:00:00+01:00`, genre: 'House',
+      location: { '@type': 'Place', name: 'Gone Hall', address: { '@type': 'PostalAddress', addressLocality: 'Leeds', addressCountry: 'United Kingdom' } },
+    })}</script></head><body><main>Over</main></body></html>`;
+    const venuesBefore = (await q(`select count(*)::int as n from venues where name = 'Gone Hall'`))[0].n;
+    const past = await runExtractionPipeline(urlP, { fetcher: mockFetcher({ [urlP]: { body: pastBody } }), ai: noAI });
+    check('a finished event is recorded as event_finished, not imported',
+      past.status === 'event_finished' && past.eventId === null, past.status);
+    check('no event row was made for it',
+      (await q(`select count(*)::int as n from events where title = 'Last Month Night'`))[0].n === 0);
+    check('no venue was created on its account',
+      (await q(`select count(*)::int as n from venues where name = 'Gone Hall'`))[0].n === venuesBefore);
+    check('the extraction remembers it, so a rescan does not retry it',
+      (await q(`select status from extractions where id = $1`, [past.extractionId]))[0].status === 'event_finished');
+    check('the scan explains it in plain words', outcomeLabel('event_finished') === 'an event that has already happened');
+
+    // Publish all: finished unpublished events are deleted from BOTH queues,
+    // duplicates wait for a person, everything else goes live.
+    const admin = (await q(`select id from members where role = 'admin' limit 1`))[0].id;
+    const mk = async (slug: string, status: string, startSql: string, dupOf: string | null = null) =>
+      (await q(
+        `insert into events (slug, title, title_normalized, start_at, timezone, status, city, country, possible_duplicate_of)
+         values ($1, $1, $1, ${startSql}, 'Europe/London', $2::event_status, 'Leeds', 'United Kingdom', $3)
+         returning id`, [slug, status, dupOf]))[0].id as string;
+    const soon = `now() + interval '10 days'`;
+    const gone = `now() - interval '10 days'`;
+    const ok = await mk('purge-ok', 'new', soon);
+    const target = await mk('purge-target', 'live', soon);
+    const dup = await mk('purge-dup', 'new', soon, target);
+    const pastNew = await mk('purge-past-new', 'new', gone);
+    const pastReview = await mk('purge-past-review', 'needs_review', gone);
+    const pastDup = await mk('purge-past-dup', 'needs_review', gone, target);
+    const pastLive = await mk('purge-past-live', 'live', gone);
+    const pastRejected = await mk('purge-past-rejected', 'rejected', gone);
+    // Ended an hour ago, though it started yesterday: over is over.
+    const endedToday = (await q(
+      `insert into events (slug, title, title_normalized, start_at, end_at, timezone, status, city, country)
+       values ('purge-ended', 'purge-ended', 'purge-ended', now() - interval '20 hours', now() - interval '1 hour',
+               'Europe/London', 'needs_review', 'Leeds', 'United Kingdom') returning id`))[0].id as string;
+    // Still on right now: started two hours ago, no end time.
+    const onNow = await mk('purge-on-now', 'needs_review', `now() - interval '2 hours'`);
+
+    const res = await publishQueue('new', admin);
+    const left = await q(`select slug, status::text from events where slug like 'purge-%'`);
+    const has = (slug: string) => left.find((r: { slug: string }) => r.slug === slug);
+    check('publish all publishes everything bar duplicates',
+      has('purge-ok')?.status === 'live' && has('purge-dup')?.status === 'new', JSON.stringify(res));
+    check('finished events in both queues are deleted, duplicates included',
+      !has('purge-past-new') && !has('purge-past-review') && !has('purge-past-dup') && !has('purge-ended'));
+    check('it says how many it cleared', res.purgedPast >= 4 && res.skippedDuplicates >= 1, JSON.stringify(res));
+    check('live and rejected events are never purged',
+      has('purge-past-live')?.status === 'live' && has('purge-past-rejected')?.status === 'rejected');
+    check('an event happening right now is kept', has('purge-on-now')?.status === 'needs_review');
+    check('the purge is in the audit log',
+      (await q(`select count(*)::int as n from audit_log where action = 'events_finished_purged'`))[0].n > 0);
+    check('a second purge has nothing to do', (await purgeFinishedUnpublished()) === 0);
+    void [ok, dup, pastNew, pastReview, pastDup, pastLive, pastRejected, endedToday, onNow];
+    await q(`delete from events where slug like 'purge-%'`);
   }
 
   // -------------------------------------------------------------------------

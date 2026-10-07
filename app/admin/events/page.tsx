@@ -26,13 +26,19 @@ export default async function AdminEventsPage({
 
   // "Past" is derived (live + finished); the stored states exclude finished
   // events from LIVE so the working queues stay clean.
-  const pastCond = `e.status = 'live' and coalesce(e.end_at, e.start_at + interval '6 hours') <= now()`;
+  const FINISHED_E = `coalesce(e.end_at, e.start_at + interval '6 hours') <= now()`;
+  const pastCond = `e.status = 'live' and ${FINISHED_E}`;
   const cond =
     state === 'past'
       ? pastCond
       : state === 'live'
         ? `e.status = 'live' and coalesce(e.end_at, e.start_at + interval '6 hours') > now()`
-        : `e.status = '${state}'`;
+        // A review queue only holds what is still to come: an unpublished
+        // event that has finished is deleted (purgeFinishedUnpublished), and
+        // until that runs it is not worth a reviewer's look.
+        : state === 'new' || state === 'needs_review'
+          ? `e.status = '${state}' and not (${FINISHED_E})`
+          : `e.status = '${state}'`;
 
   const [events, counts] = await Promise.all([
     query<AdminEventRow>(
@@ -89,7 +95,7 @@ export default async function AdminEventsPage({
     ),
     query<{ status: string; n: number; past: number }>(
       `select e.status::text, count(*)::int as n,
-              count(*) filter (where ${pastCond})::int as past
+              count(*) filter (where ${FINISHED_E})::int as past
          from events e group by e.status`
     ),
   ]);
@@ -98,7 +104,7 @@ export default async function AdminEventsPage({
     if (key === 'past') return counts.find((c) => c.status === 'live')?.past ?? 0;
     const row = counts.find((c) => c.status === key);
     if (!row) return 0;
-    return key === 'live' ? row.n - row.past : row.n;
+    return key === 'live' || key === 'new' || key === 'needs_review' ? row.n - row.past : row.n;
   };
 
   return (

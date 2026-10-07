@@ -1225,6 +1225,8 @@ console.log('\n— Publish all —');
   check('the review queue offers publish all', queue.includes('Publish all'));
   check('the bar says what it will skip',
     queue.includes('flagged as a possible duplicate'));
+  check('a finished event is not shown in the review queue',
+    !queue.includes('Bulk Finished'));
 
   check('a member cannot publish a queue',
     (await nadia.fetch('/api/admin/events/publish-all', { method: 'POST', body: JSON.stringify({ state: 'new' }) })).status === 403);
@@ -1236,7 +1238,7 @@ console.log('\n— Publish all —');
   });
   const out = await res.json();
   check('publishing the queue reports what it did',
-    res.status === 200 && out.published >= 3 && out.skippedDuplicates >= 1 && out.skippedPast >= 1);
+    res.status === 200 && out.published >= 3 && out.skippedDuplicates >= 1 && out.purgedPast >= 1);
 
   const after = await q(
     `select id, status::text from events where id = any($1::uuid[])`,
@@ -1247,8 +1249,8 @@ console.log('\n— Publish all —');
     statusOf(ok1.id) === 'live' && statusOf(ok2.id) === 'live');
   check('a flagged duplicate was left for a person to decide',
     statusOf(flagged.id) === 'new');
-  check('an event that already finished was left alone',
-    statusOf(finished.id) === 'new');
+  check('an event that already finished was cleared out, not published',
+    statusOf(finished.id) === undefined);
   check('publishing stamped published_at',
     (await q(`select published_at from events where id = $1`, [ok1.id]))[0].published_at !== null);
   check('the bulk publish is in the audit log',

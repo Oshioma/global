@@ -4,7 +4,7 @@ export type AuditAction =
   | 'profile_changed' | 'event_created' | 'event_edited' | 'event_cancelled'
   | 'event_rescheduled' | 'event_sold_out' | 'event_restored' | 'event_confirmed'
   | 'event_ignored' | 'event_reported' | 'event_claimed' | 'event_claim_decided'
-  | 'event_deleted' | 'events_bulk_published' | 'source_deleted'
+  | 'event_deleted' | 'events_bulk_published' | 'events_finished_purged' | 'source_deleted'
   | 'source_connected' | 'source_paused' | 'source_resumed' | 'source_url_changed'
   | 'source_trust_changed'
   | 'source_scanned' | 'team_member_added' | 'team_member_removed' | 'role_changed'

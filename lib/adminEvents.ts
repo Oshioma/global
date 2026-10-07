@@ -269,8 +269,10 @@ export async function updateEvent(
 //   decision someone made; it is not undone by a convenience button.
 // - Anything the engine flagged as a possible duplicate is left behind. A
 //   duplicate published in bulk is a mess someone has to unpick by hand.
-// - Events that have already finished are left behind too — publishing them
-//   puts nothing in front of anybody.
+// - Events that have already finished are not published — publishing them
+//   puts nothing in front of anybody. They are DELETED instead (see
+//   purgeFinishedUnpublished), so the queue a press leaves behind is only the
+//   duplicates a person still has to decide on.
 // - It works from the queue as the server sees it, never from a list of ids
 //   the browser sends, so it cannot be pointed at anything else.
 //
@@ -281,26 +283,58 @@ export const PUBLISH_ALL_LIMIT = 100;
 export type PublishAllResult = {
   published: number;
   skippedDuplicates: number;
-  skippedPast: number;
+  purgedPast: number;
   remaining: number;
 };
+
+// The SQL that says an event is over: its end, or six hours after its start
+// when it has no end. One definition, used by the purge and the queue pages.
+export const FINISHED_SQL = `coalesce(end_at, start_at + interval '6 hours') <= now()`;
+
+// FINISHED AND NEVER PUBLISHED: an event that sat in New or Needs Review
+// until it was over. Nobody can go to it, nobody saw it, and it only stands
+// between an admin and an empty queue — so it is deleted, not kept.
+//
+// Safe to delete: everything that points at an event either goes with it or
+// lets go of it, and the extraction that produced it survives (its event_id
+// is nulled), so the scanner still knows that page was read and does not
+// import it again. Live and rejected events are never touched — a published
+// event's past is the archive, and a rejection is a decision someone made.
+export async function purgeFinishedUnpublished(actorId: string | null = null): Promise<number> {
+  const gone = await query<{ id: string }>(
+    `delete from events
+      where status in ('new', 'needs_review')
+        and ${FINISHED_SQL}
+      returning id`
+  );
+  if (gone.length) {
+    await audit('events_finished_purged', {
+      actorId,
+      detail: { count: gone.length },
+    });
+  }
+  return gone.length;
+}
 
 export async function publishQueue(
   state: 'new' | 'needs_review',
   adminId: string
 ): Promise<PublishAllResult> {
   if (state !== 'new' && state !== 'needs_review') {
-    return { published: 0, skippedDuplicates: 0, skippedPast: 0, remaining: 0 };
+    return { published: 0, skippedDuplicates: 0, purgedPast: 0, remaining: 0 };
   }
 
-  const queue = await query<{ id: string; is_duplicate: boolean; is_past: boolean }>(
-    `select id,
-            possible_duplicate_of is not null as is_duplicate,
-            coalesce(end_at, start_at + interval '6 hours') <= now() as is_past
+  // Clear out what is already over first, from BOTH queues: pressing the
+  // button on one queue and finding the other still full of dead events is
+  // the same problem one tab over.
+  const purgedPast = await purgeFinishedUnpublished(adminId);
+
+  const queue = await query<{ id: string; is_duplicate: boolean }>(
+    `select id, possible_duplicate_of is not null as is_duplicate
        from events where status = $1::event_status`,
     [state]
   );
-  const publishable = queue.filter((e) => !e.is_duplicate && !e.is_past);
+  const publishable = queue.filter((e) => !e.is_duplicate);
   const batch = publishable.slice(0, PUBLISH_ALL_LIMIT);
 
   if (batch.length) {
@@ -324,7 +358,7 @@ export async function publishQueue(
   return {
     published: batch.length,
     skippedDuplicates: queue.filter((e) => e.is_duplicate).length,
-    skippedPast: queue.filter((e) => !e.is_duplicate && e.is_past).length,
+    purgedPast,
     remaining: publishable.length - batch.length,
   };
 }

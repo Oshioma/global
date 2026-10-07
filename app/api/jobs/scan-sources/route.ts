@@ -1,5 +1,5 @@
 // Scheduled polling entrypoint: scans every source whose polling schedule is
-// due.
+// due, then deletes unpublished events that have already finished.
 //
 // Vercel Cron (see vercel.json) calls this with GET and the CRON_SECRET
 // bearer token, so GET and POST both run the job. An external scheduler works
@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { getCurrentMember } from '@/lib/auth';
 import { scanDueSources } from '@/lib/supply/scanner';
+import { purgeFinishedUnpublished } from '@/lib/adminEvents';
 
 export const maxDuration = 300;
 
@@ -37,9 +38,14 @@ async function run(req: NextRequest) {
     }
   }
   const { scanned, results } = await scanDueSources();
+  // Housekeeping on the same schedule: anything left in New or Needs Review
+  // after it finished is deleted, so the review queues only hold events
+  // somebody could still go to.
+  const purgedFinished = await purgeFinishedUnpublished();
   return NextResponse.json({
     ok: true,
     scanned,
+    purgedFinished,
     results: results.map((r) => ({
       scanId: r.scanId, status: r.status, method: r.method,
       candidates: r.candidatesFound, new: r.newCandidates,

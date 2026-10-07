@@ -3,8 +3,8 @@
 // PUBLISH ALL — at the top of the review queue, where the decision is made.
 //
 // It says what it will do before it does it, and what it left behind after:
-// flagged duplicates and finished events are never swept up in a bulk press,
-// so the count on the button is not always the count in the queue.
+// flagged duplicates are never swept up in a bulk press, and events that have
+// already finished are cleared out of the queues rather than published.
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -12,7 +12,7 @@ import { useState } from 'react';
 type Result = {
   published: number;
   skippedDuplicates: number;
-  skippedPast: number;
+  purgedPast: number;
   remaining: number;
   error?: string;
 };
@@ -34,10 +34,10 @@ export function PublishAll({ state, count }: { state: 'new' | 'needs_review'; co
         body: JSON.stringify({ state }),
       });
       const data = await res.json();
-      setResult(res.ok ? data : { published: 0, skippedDuplicates: 0, skippedPast: 0, remaining: 0, error: data.error ?? 'Could not publish' });
+      setResult(res.ok ? data : { published: 0, skippedDuplicates: 0, purgedPast: 0, remaining: 0, error: data.error ?? 'Could not publish' });
       if (res.ok) router.refresh();
     } catch {
-      setResult({ published: 0, skippedDuplicates: 0, skippedPast: 0, remaining: 0, error: 'Could not publish' });
+      setResult({ published: 0, skippedDuplicates: 0, purgedPast: 0, remaining: 0, error: 'Could not publish' });
     } finally {
       setBusy(false);
       setConfirming(false);
@@ -50,7 +50,7 @@ export function PublishAll({ state, count }: { state: 'new' | 'needs_review'; co
         result.skippedDuplicates > 0
           ? `${plural(result.skippedDuplicates, 'possible duplicate')} left for you to decide.`
           : null,
-        result.skippedPast > 0 ? `${plural(result.skippedPast, 'event')} already finished, left alone.` : null,
+        result.purgedPast > 0 ? `Cleared out ${plural(result.purgedPast, 'event')} that had already finished.` : null,
       ].filter(Boolean)
     : [];
 
@@ -59,8 +59,8 @@ export function PublishAll({ state, count }: { state: 'new' | 'needs_review'; co
       <div className="publishAllText">
         <strong>{plural(count, 'event')} waiting</strong>
         <span>
-          Publishing them all skips anything flagged as a possible duplicate, and anything
-          that has already finished.
+          Publishing them all skips anything flagged as a possible duplicate, and clears
+          out anything that has already finished.
         </span>
         {result && !result.error && (
           <span className="publishAllDone">

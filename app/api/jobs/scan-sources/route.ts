@@ -15,6 +15,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { getCurrentMember } from '@/lib/auth';
 import { scanDueSources } from '@/lib/supply/scanner';
 import { purgeFinishedUnpublished } from '@/lib/adminEvents';
+import { ensurePendingSources } from '@/lib/supply/suggest';
 
 export const maxDuration = 300;
 
@@ -37,6 +38,8 @@ async function run(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
+  // A monthly suggestion with no source yet gets one, so this run can scan it.
+  await ensurePendingSources();
   const { scanned, results } = await scanDueSources();
   // Housekeeping on the same schedule: anything left in New or Needs Review
   // after it finished is deleted, so the review queues only hold events

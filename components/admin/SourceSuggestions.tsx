@@ -1,15 +1,28 @@
 'use client';
 
 // THIS MONTH'S SUGGESTIONS: five drum & bass, five house and five hip hop
-// promoters or clubs a month, found and tested by the monthly job
-// (/api/jobs/suggest-sources). Every one has already passed the scanner test;
-// none is a source until an admin presses Add.
+// promoters or clubs a month, found by the monthly job
+// (/api/jobs/suggest-sources). Each one is added as a source that is NOT
+// polling, and scanned, so what shows here is the events it actually lists.
+//
+// Tick POLL and it goes on the schedule and its upcoming events are published
+// — no trip to the workbench. DISMISS deletes it and anything only it brought
+// in. Until one or the other, its events stay out of the review queues.
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { sourceTypeLabel } from '@/lib/util';
+import { fmtDate, sourceTypeLabel } from '@/lib/util';
 import { startAndWatchScan } from '@/lib/supply/watchScan';
 import { explainScan } from '@/lib/supply/outcomes';
+
+export type SuggestionEvent = {
+  id: string;
+  title: string;
+  start_at: string;
+  timezone: string;
+  city: string | null;
+  duplicate: boolean;
+};
 
 export type SuggestionRow = {
   id: string;
@@ -25,6 +38,13 @@ export type SuggestionRow = {
   verdict: string | null;
   status: 'pending' | 'added' | 'dismissed';
   source_id: string | null;
+  polling: boolean;
+  // The source's latest scan: null when it has never been scanned.
+  scan_status: 'running' | 'succeeded' | 'failed' | null;
+  scan_error: string | null;
+  scanned_at: string | null;
+  upcoming: number;
+  events: SuggestionEvent[];
 };
 
 const BUCKETS = [
@@ -33,8 +53,10 @@ const BUCKETS = [
   { key: 'hiphop', label: 'Hip Hop' },
 ];
 
-type RowState = { busy: boolean; error: string; scanning: boolean; scanNote: string };
-const blank = (): RowState => ({ busy: false, error: '', scanning: false, scanNote: '' });
+type RowState = { busy: boolean; error: string; scanning: boolean; scanNote: string; done: string };
+const blank = (): RowState => ({ busy: false, error: '', scanning: false, scanNote: '', done: '' });
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export function SourceSuggestions({
   month, suggestions, extraCountries, sourceCountries,
@@ -45,7 +67,7 @@ export function SourceSuggestions({
   sourceCountries: string[];
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(suggestions.some((s) => s.status === 'pending'));
+  const [open, setOpen] = useState(suggestions.some((s) => s.status === 'pending' || (s.status === 'added' && !s.polling)));
   const [rows, setRows] = useState<Record<string, RowState>>({});
   const [running, setRunning] = useState(false);
   const [runNote, setRunNote] = useState('');
@@ -55,10 +77,15 @@ export function SourceSuggestions({
   const setRow = (id: string, patch: Partial<RowState>) =>
     setRows((prev) => ({ ...prev, [id]: { ...(prev[id] ?? blank()), ...patch } }));
 
-  const pending = suggestions.filter((s) => s.status === 'pending').length;
+  const undecided = (s: SuggestionRow) => s.status === 'pending' || (s.status === 'added' && !s.polling);
+  const pending = suggestions.filter(undecided).length;
   const thisMonth = suggestions.filter((s) => s.batch_month === month);
 
-  async function decide(s: SuggestionRow, action: 'add' | 'dismiss') {
+  async function decide(s: SuggestionRow, action: 'poll' | 'dismiss') {
+    if (action === 'dismiss' && s.upcoming > 0 &&
+        !window.confirm(`Dismiss ${s.name}? Its ${plural(s.upcoming, 'unpublished event')} will be deleted too.`)) {
+      return;
+    }
     setRow(s.id, { busy: true, error: '' });
     try {
       const res = await fetch(`/api/admin/sources/suggestions/${s.id}`, {
@@ -68,7 +95,12 @@ export function SourceSuggestions({
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setRow(s.id, { busy: false });
+        setRow(s.id, {
+          busy: false,
+          done: action === 'poll'
+            ? `Polling — published ${plural(data.published ?? 0, 'event')}.`
+            : data.deletedEvents ? `Dismissed, and ${plural(data.deletedEvents, 'event')} removed.` : 'Dismissed.',
+        });
         router.refresh();
       } else {
         setRow(s.id, { busy: false, error: data?.error ?? 'Could not save' });
@@ -78,7 +110,7 @@ export function SourceSuggestions({
     }
   }
 
-  // Adding is not the finish line — scanning is. Same offer as the search.
+  // Normally the scheduled scan gets there first; this is for not waiting.
   async function scan(s: SuggestionRow) {
     if (!s.source_id) return;
     setRow(s.id, { scanning: true, error: '', scanNote: 'Scanning…' });
@@ -89,15 +121,10 @@ export function SourceSuggestions({
       return;
     }
     const r = out.scan;
-    const why = explainScan(r.outcomes, r.extracted);
     setRow(s.id, {
       scanning: false,
+      scanNote: '',
       error: r.status === 'failed' ? (r.error ?? 'Scan failed') : '',
-      scanNote: r.status === 'failed' ? '' :
-        `Scanned: ${r.candidatesFound} link${r.candidatesFound === 1 ? '' : 's'} · ${r.extracted} extracted · `
-        + `${r.duplicates} duplicate · ${r.failed} failed`
-        + (r.extracted > 0 ? ' — review them in Events' : '')
-        + (why ? `. ${why}` : ''),
     });
     router.refresh();
   }
@@ -111,14 +138,15 @@ export function SourceSuggestions({
       if (res.ok) {
         const added = (data.buckets ?? []).reduce((n: number, b: { added: number }) => n + b.added, 0);
         const errors: string[] = (data.buckets ?? []).flatMap((b: { errors: string[] }) => b.errors);
+        const scanned = data.scanned ? ` Scanned ${plural(data.scanned, 'suggestion')}.` : '';
         setRunNote(
           added
-            ? `Found ${added} more.${data.outOfTime ? ' Ran out of time — press again to carry on.' : ''}`
+            ? `Found ${added} more.${scanned}${data.outOfTime ? ' Ran out of time — press again to carry on.' : ''}`
             : errors.length
-              ? `Nothing new — ${errors[0]}`
+              ? `Nothing new — ${errors[0]}${scanned}`
               : data.outOfTime
-                ? 'Ran out of time before finding any — press again to carry on.'
-                : 'Nothing new this time: every genre is full for the month, or no country had a site that passed the test.'
+                ? `Ran out of time before finding any — press again to carry on.${scanned}`
+                : `Nothing new to find: every genre is full for the month, or no place had a site that passed the test.${scanned}`
         );
         router.refresh();
       } else {
@@ -167,16 +195,28 @@ export function SourceSuggestions({
     router.refresh();
   }
 
+  // What the scan found, in words, for a suggestion still waiting on a
+  // decision.
+  function foundLine(s: SuggestionRow, r: RowState) {
+    if (r.scanning) return r.scanNote || 'Scanning…';
+    if (s.scan_status === null) return 'Not scanned yet — the next scheduled scan will pick it up.';
+    if (s.scan_status === 'running') return 'Scanning now…';
+    if (s.scan_status === 'failed') return `Scan failed${s.scan_error ? `: ${s.scan_error}` : ''}.`;
+    if (s.upcoming === 0) return 'Scanned — no upcoming events found on it.';
+    return `Found ${plural(s.upcoming, 'upcoming event')}:`;
+  }
+
   return (
     <div className="discoverPanel" id="suggestions">
       <div className="discoverHead">
         <div>
-          <strong>This month&rsquo;s suggestions{pending > 0 ? ` (${pending} to review)` : ''}</strong>
+          <strong>This month&rsquo;s suggestions{pending > 0 ? ` (${pending} to decide)` : ''}</strong>
           <div style={{ color: 'var(--text-faint)', fontSize: 12.5 }}>
             Every month: 5 drum &amp; bass, 5 house and 5 hip hop promoters or clubs that aren&rsquo;t
-            sources yet. Drum &amp; bass and house rotate through your countries; hip hop rotates
-            through US cities. Each one has already passed the scanner test — nothing is added
-            until you press Add.
+            sources yet — drum &amp; bass and house from your countries, hip hop from US cities. Each
+            one is scanned for you, so you can see the events it lists. Tick <b>Poll</b> to keep it:
+            it goes on the schedule and those events are published. Its events stay out of the
+            review queue until you decide.
           </div>
         </div>
         <button className="btnGhost" type="button" onClick={() => setOpen((o) => !o)}>
@@ -204,9 +244,13 @@ export function SourceSuggestions({
                       <tbody>
                         {list.map((s) => {
                           const r = rows[s.id] ?? blank();
+                          // Still to decide — or added before Poll existed and never put
+                          // on the schedule, which gets the same choice.
+                          const isPending = s.status === 'pending' || (s.status === 'added' && !s.polling);
+                          const canDismiss = s.status === 'pending';
                           return (
                             <tr key={s.id} style={s.status === 'dismissed' ? { opacity: 0.5 } : undefined}>
-                              <td>
+                              <td style={{ minWidth: 200 }}>
                                 <strong>{s.name}</strong>
                                 <div style={{ fontSize: 11.5 }}>
                                   <a href={s.url} target="_blank" rel="noopener noreferrer"
@@ -214,47 +258,84 @@ export function SourceSuggestions({
                                     {s.url}
                                   </a>
                                 </div>
+                                <div style={{ color: 'var(--text-faint)', fontSize: 11.5 }}>
+                                  {sourceTypeLabel(s.kind)} · {[s.city, s.country].filter(Boolean).join(', ') || '—'}
+                                </div>
                                 {s.note && (
                                   <div style={{ color: 'var(--text-faint)', fontSize: 11.5 }}>{s.note}</div>
                                 )}
                               </td>
-                              <td style={{ whiteSpace: 'nowrap' }}>
-                                {s.city ?? '—'}
-                                <div style={{ color: 'var(--text-faint)', fontSize: 11.5 }}>{s.country}</div>
-                              </td>
-                              <td style={{ fontSize: 12 }}>{sourceTypeLabel(s.kind)}</td>
-                              <td style={{ fontSize: 11.5, minWidth: 200, color: 'var(--text-soft)' }}>
-                                {s.verdict ?? `${s.candidates ?? 0} event links found`}
-                                {r.scanNote && <div style={{ marginTop: 4 }}>{r.scanNote}</div>}
-                                {r.error && <div style={{ color: 'var(--danger)' }}>{r.error}</div>}
-                              </td>
-                              <td style={{ whiteSpace: 'nowrap' }}>
-                                {s.status === 'pending' ? (
-                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                    <button className="btnAccent" type="button"
-                                            style={{ padding: '4px 10px', fontSize: 11 }}
-                                            onClick={() => decide(s, 'add')} disabled={r.busy}>
-                                      {r.busy ? 'Saving…' : 'Add source'}
-                                    </button>
-                                    <button className="btnGhost" type="button"
-                                            style={{ padding: '4px 10px', fontSize: 11 }}
-                                            onClick={() => decide(s, 'dismiss')} disabled={r.busy}>
-                                      Dismiss
-                                    </button>
-                                  </div>
-                                ) : s.status === 'added' ? (
-                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                                    <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>Added ✓</span>
-                                    {s.source_id && (
-                                      <button className="btnGhost" type="button"
-                                              style={{ padding: '4px 10px', fontSize: 11 }}
-                                              onClick={() => scan(s)} disabled={r.scanning}>
-                                        {r.scanning ? 'Scanning…' : 'Scan now'}
-                                      </button>
+                              <td style={{ fontSize: 12, minWidth: 260, color: 'var(--text-soft)' }}>
+                                {isPending ? (
+                                  <>
+                                    <div style={s.scan_status === 'failed' ? { color: 'var(--danger)' } : undefined}>
+                                      {foundLine(s, r)}
+                                    </div>
+                                    {!r.scanning && s.events.length > 0 && (
+                                      <ul style={{ margin: '4px 0 0', paddingLeft: 16, lineHeight: 1.55 }}>
+                                        {s.events.map((e) => (
+                                          <li key={e.id}>
+                                            <a href={`/admin/events/${e.id}`} style={{ textDecoration: 'underline' }}>
+                                              {e.title}
+                                            </a>
+                                            <span style={{ color: 'var(--text-faint)' }}>
+                                              {' '}· {fmtDate(e.start_at, e.timezone, { weekday: 'short', day: 'numeric', month: 'short' })}{e.city ? ` · ${e.city}` : ''}
+                                              {e.duplicate ? ' · possible duplicate, stays in review' : ''}
+                                            </span>
+                                          </li>
+                                        ))}
+                                        {s.upcoming > s.events.length && (
+                                          <li style={{ color: 'var(--text-faint)' }}>
+                                            and {s.upcoming - s.events.length} more
+                                          </li>
+                                        )}
+                                      </ul>
                                     )}
-                                  </div>
+                                    {s.scan_status === 'succeeded' && s.upcoming === 0 && s.scanned_at && (
+                                      <div style={{ color: 'var(--text-faint)', fontSize: 11.5, marginTop: 2 }}>
+                                        {s.verdict}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : s.status === 'added' ? (
+                                  <span>Polling ✓{s.upcoming ? ` · ${plural(s.upcoming, 'upcoming event')}` : ''}</span>
                                 ) : (
-                                  <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>Dismissed</span>
+                                  <span style={{ color: 'var(--text-faint)' }}>Dismissed</span>
+                                )}
+                                {r.done && <div style={{ marginTop: 4 }}>{r.done}</div>}
+                                {r.error && <div style={{ color: 'var(--danger)', marginTop: 4 }}>{r.error}</div>}
+                              </td>
+                              <td style={{ whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                                {isPending && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0,
+                                                    fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={false}
+                                        disabled={r.busy}
+                                        onChange={() => decide(s, 'poll')}
+                                        aria-label={`Poll ${s.name}`}
+                                      />
+                                      {r.busy ? 'Saving…' : 'Poll'}
+                                    </label>
+                                    <div style={{ display: 'flex', gap: 6 }}>
+                                      {(s.scan_status === null || s.scan_status === 'failed') && s.source_id && (
+                                        <button className="btnGhost" type="button"
+                                                style={{ padding: '4px 10px', fontSize: 11 }}
+                                                onClick={() => scan(s)} disabled={r.scanning || r.busy}>
+                                          {r.scanning ? 'Scanning…' : 'Scan now'}
+                                        </button>
+                                      )}
+                                      {canDismiss && (
+                                        <button className="btnGhost" type="button"
+                                                style={{ padding: '4px 10px', fontSize: 11 }}
+                                                onClick={() => decide(s, 'dismiss')} disabled={r.busy || r.scanning}>
+                                          Dismiss
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
                                 )}
                               </td>
                             </tr>

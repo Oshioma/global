@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { query } from '@/lib/db';
+import { heldForSuggestionSql } from '@/lib/adminEvents';
 import { ReviewCard, type AdminEventRow } from '@/components/admin/ReviewCard';
 import { PublishAll } from '@/components/admin/PublishAll';
 import { FindImages } from '@/components/admin/FindImages';
@@ -37,7 +38,7 @@ export default async function AdminEventsPage({
         // event that has finished is deleted (purgeFinishedUnpublished), and
         // until that runs it is not worth a reviewer's look.
         : state === 'new' || state === 'needs_review'
-          ? `e.status = '${state}' and not (${FINISHED_E})`
+          ? `e.status = '${state}' and not (${FINISHED_E}) and not ${heldForSuggestionSql('e')}`
           : `e.status = '${state}'`;
 
   const [events, counts] = await Promise.all([
@@ -95,7 +96,8 @@ export default async function AdminEventsPage({
     ),
     query<{ status: string; n: number; past: number }>(
       `select e.status::text, count(*)::int as n,
-              count(*) filter (where ${FINISHED_E})::int as past
+              count(*) filter (where ${FINISHED_E}
+                 or (e.status in ('new', 'needs_review') and ${heldForSuggestionSql('e')}))::int as past
          from events e group by e.status`
     ),
   ]);

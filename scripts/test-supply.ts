@@ -44,6 +44,7 @@ import { testVerdict, type ProbeResult } from '@/lib/supply/verdict';
 import { purgeFinishedUnpublished, publishQueue } from '@/lib/adminEvents';
 import { pollSuggestion, dismissSuggestion } from '@/lib/supply/suggest';
 import { heldForSuggestionSql } from '@/lib/adminEvents';
+import { resolveDuplicates, titlesMatch, localDay } from '@/lib/duplicates';
 import { runMonthlySuggestions, bucketGenres, probePassed, suggestionsEmail, hostOf } from '@/lib/supply/suggest';
 import { fetcherFor, renderingConfigured } from '@/lib/supply/render';
 import { parse } from 'node-html-parser';
@@ -1085,11 +1086,13 @@ async function main() {
     const res = await publishQueue('new', admin);
     const left = await q(`select slug, status::text from events where slug like 'purge-%'`);
     const has = (slug: string) => left.find((r: { slug: string }) => r.slug === slug);
-    check('publish all publishes everything bar duplicates',
-      has('purge-ok')?.status === 'live' && has('purge-dup')?.status === 'new', JSON.stringify(res));
+    // 'purge-dup' was flagged against 'purge-target', but the names differ:
+    // not the same event, so the flag is cleared and it is published.
+    check('publish all publishes everything, a wrongly flagged duplicate included',
+      has('purge-ok')?.status === 'live' && has('purge-dup')?.status === 'live', JSON.stringify(res));
     check('finished events in both queues are deleted, duplicates included',
       !has('purge-past-new') && !has('purge-past-review') && !has('purge-past-dup') && !has('purge-ended'));
-    check('it says how many it cleared', res.purgedPast >= 4 && res.skippedDuplicates >= 1, JSON.stringify(res));
+    check('it says how many it cleared', res.purgedPast >= 4 && res.skippedDuplicates === 0, JSON.stringify(res));
     check('live and rejected events are never purged',
       has('purge-past-live')?.status === 'live' && has('purge-past-rejected')?.status === 'rejected');
     check('an event happening right now is kept', has('purge-on-now')?.status === 'needs_review');
@@ -1098,6 +1101,88 @@ async function main() {
     check('a second purge has nothing to do', (await purgeFinishedUnpublished()) === 0);
     void [ok, dup, pastNew, pastReview, pastDup, pastLive, pastRejected, endedToday, onNow];
     await q(`delete from events where slug like 'purge-%'`);
+  }
+
+  // -------------------------------------------------------------------------
+  console.log('\n— possible duplicates: same place, date and name, or not —');
+  {
+    check('two rooms at one club are not the same event',
+      !titlesMatch('Karaoke Room - Sala Razzmatazz', 'Perreo Room - Sala Razzmatazz'));
+    check('a dash is not a difference',
+      titlesMatch('Afrobeat Vibes Night – Lagos 2026', 'Afrobeat Vibes Night - Lagos 2026'));
+    check('a name with a tail on it is the same name',
+      titlesMatch('Kappa FuturFestival 2025', 'Kappa FuturFestival 2025 - Waiting List'));
+    check('two different parties at one venue are not the same',
+      !titlesMatch('Reggaeton Party', 'CRAVE HER: HEXED'));
+    check('the date is the local day, not the UTC one',
+      localDay('2026-10-10T23:30:00Z', 'Europe/London') === '2026-10-11'
+      && localDay('2026-10-10T23:30:00Z', 'America/New_York') === '2026-10-10');
+
+    const admin = (await q(`select id from members where role = 'admin' limit 1`))[0].id;
+    const venue = (await q(
+      `insert into venues (name, slug, city, country) values ('Dup Hall', 'dup-hall', 'Leeds', 'United Kingdom')
+       on conflict (slug) do update set name = excluded.name returning id`))[0].id;
+    const genre = (await q(`select id from genres where active order by name limit 1`))[0].id;
+    const mk = async (slug: string, title: string, status: string, opts: {
+      venue?: string | null; city?: string; at?: string; dupOf?: string | null; image?: string | null;
+      description?: string | null; ticket?: string | null;
+    } = {}) => (await q(
+      `insert into events (slug, title, title_normalized, start_at, timezone, status, venue_id, city, country,
+                           possible_duplicate_of, primary_image_url, description, ticket_url)
+       values ($1, $2, lower($2), ${opts.at ?? `now() + interval '9 days'`}, 'Europe/London', $3::event_status,
+               $4, $5, 'United Kingdom', $6, $7, $8, $9) returning id`,
+      [slug, title, status, opts.venue === undefined ? venue : opts.venue, opts.city ?? 'Leeds',
+       opts.dupOf ?? null, opts.image ?? null, opts.description ?? null, opts.ticket ?? null]))[0].id as string;
+
+    // 1. Live original, thinner: the live one stays and is filled in.
+    const live = await mk('dup-live', 'Jungle Mania NYE', 'live');
+    const richer = await mk('dup-richer', 'Jungle Mania NYE', 'needs_review', {
+      dupOf: live, image: 'https://img.example/jm.jpg', description: 'All night long', ticket: 'https://t.example/jm' });
+    await q(`insert into event_genres (event_id, genre_id, source, confidence) values ($1, $2, 'manual', 90)`, [richer, genre]);
+    await q(`insert into event_source_links (event_id, url, kind) values ($1, 'https://promo.example/jm', 'source_scan')`, [richer]);
+
+    // 2. Both waiting, the flagged one richer: it is kept, the original goes.
+    const thin = await mk('dup-thin', 'Bass Culture Leeds', 'new');
+    const full = await mk('dup-full', 'Bass Culture Leeds', 'needs_review', {
+      dupOf: thin, image: 'https://img.example/bc.jpg', description: 'Lineup TBA' });
+
+    // 3. Same venue, same night, different party: not a duplicate.
+    const otherParty = await mk('dup-other-party', 'Reggaeton Party', 'needs_review', { dupOf: live });
+
+    // 4. Same name, another day: not a duplicate.
+    const nextDay = await mk('dup-next-day', 'Jungle Mania NYE', 'needs_review', {
+      dupOf: live, at: `now() + interval '10 days'` });
+
+    // 5. No venue on one side: the city decides.
+    const noVenueSame = await mk('dup-novenue-same', 'Jungle Mania NYE', 'needs_review', { dupOf: live, venue: null });
+    const noVenueElsewhere = await mk('dup-novenue-else', 'Jungle Mania NYE', 'needs_review', {
+      dupOf: live, venue: null, city: 'Bristol' });
+
+    const res = await resolveDuplicates(admin);
+    const row = async (id: string) => (await q(
+      `select status::text, possible_duplicate_of, primary_image_url, description, ticket_url
+         from events where id = $1`, [id]))[0];
+    const liveNow = await row(live);
+    check('a duplicate of a live event is folded into it', !(await row(richer)) && liveNow?.status === 'live');
+    check('…and the live event gets the details it was missing',
+      liveNow.primary_image_url === 'https://img.example/jm.jpg' && liveNow.description === 'All night long'
+      && liveNow.ticket_url === 'https://t.example/jm');
+    check('…its genres and its source links too',
+      (await q(`select count(*)::int as n from event_genres where event_id = $1`, [live]))[0].n === 1
+      && (await q(`select count(*)::int as n from event_source_links where event_id = $1 and url = 'https://promo.example/jm'`, [live]))[0].n === 1);
+    check('between two waiting copies, the one with more information is kept',
+      !(await row(thin)) && (await row(full))?.possible_duplicate_of === null);
+    check('a different party the same night is cleared to publish',
+      (await row(otherParty))?.possible_duplicate_of === null && (await row(otherParty))?.status === 'needs_review');
+    check('the same name on another day is cleared too', (await row(nextDay))?.possible_duplicate_of === null);
+    check('with no venue, the same city on the same day is the same place', !(await row(noVenueSame)));
+    check('…and another city is not', (await row(noVenueElsewhere))?.possible_duplicate_of === null);
+    check('it reports what it did', res.merged === 3 && res.cleared === 3, JSON.stringify(res));
+    check('a second run has nothing to do',
+      JSON.stringify(await resolveDuplicates(admin)) === JSON.stringify({ merged: 0, cleared: 0 }));
+    check('the settling is in the audit log',
+      (await q(`select count(*)::int as n from audit_log where action = 'duplicates_resolved'`))[0].n > 0);
+    await q(`delete from events where slug like 'dup-%'`);
   }
 
   // -------------------------------------------------------------------------
@@ -1266,11 +1351,11 @@ async function main() {
     // Events a suggestion's source found are held out of the review queue.
     const [keep, toss] = octSources as { id: string; source_id: string }[];
     const otherSrc = (await q(`select id from event_sources where url = 'https://known.example/events'`))[0].id;
-    const evFor = async (slug: string, sourceIds: string[], dupOf: string | null = null) => {
+    const evFor = async (slug: string, sourceIds: string[], dupOf: string | null = null, title = slug) => {
       const id = (await q(
         `insert into events (slug, title, title_normalized, start_at, timezone, status, city, country, possible_duplicate_of)
-         values ($1, $1, $1, now() + interval '12 days', 'Europe/London', 'new', 'Leeds', 'United Kingdom', $2)
-         returning id`, [slug, dupOf]))[0].id as string;
+         values ($1, $3, $3, now() + interval '12 days', 'Europe/London', 'new', 'Leeds', 'United Kingdom', $2)
+         returning id`, [slug, dupOf, title]))[0].id as string;
       for (const sid of sourceIds) {
         await q(`insert into event_source_links (event_id, source_id, url, kind) values ($1, $2, $3, 'source_scan')`,
           [id, sid, `https://x.example/${slug}/${sid}`]);
@@ -1278,7 +1363,7 @@ async function main() {
       return id;
     };
     const held = await evFor('sugg-held', [keep.source_id]);
-    const heldDup = await evFor('sugg-held-dup', [keep.source_id], held);
+    const heldDup = await evFor('sugg-held-copy', [keep.source_id], held, 'sugg-held');
     const shared = await evFor('sugg-shared', [toss.source_id, otherSrc]);
     const tossOnly = await evFor('sugg-toss-only', [toss.source_id]);
     const isHeld = async (id: string) =>
@@ -1296,7 +1381,8 @@ async function main() {
     const keptSrc = (await q(`select polling_enabled from event_sources where id = $1`, [keep.source_id]))[0];
     check('ticking Poll puts the source on the schedule', polled.ok && keptSrc.polling_enabled);
     check('…and publishes the events it found', (await statusOf(held)) === 'live' && polled.ok && polled.published === 1);
-    check('…but a possible duplicate still waits for a person', (await statusOf(heldDup)) === 'new');
+    check('…and a second copy of the same event is merged, not published twice',
+      (await statusOf(heldDup)) === undefined);
     check('…and the suggestion is marked as kept',
       (await q(`select status from source_suggestions where id = $1`, [keep.id]))[0].status === 'added');
     check('a decided suggestion cannot be polled twice', !(await pollSuggestion(keep.id, admin2)).ok);

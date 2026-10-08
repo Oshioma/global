@@ -28,6 +28,7 @@ import {
 import { probeTarget } from './probe';
 import { scanSource } from './scanner';
 import { onEventPublished } from '@/lib/alerts';
+import { resolveDuplicates } from '@/lib/duplicates';
 import { audit } from '@/lib/audit';
 import { matchGenreIdsByName } from '@/lib/util';
 import { testVerdict, type ProbeResult } from './verdict';
@@ -415,8 +416,8 @@ async function scanUnscannedSuggestions(deps: SuggestDeps, left: () => number): 
 }
 
 // POLL: put the source on the schedule and publish what it has already found
-// — its upcoming events, except anything flagged as a possible duplicate,
-// which still waits in Needs Review for a person.
+// — its upcoming events. Duplicates are settled first (lib/duplicates.ts), so
+// a copy of an event we already have is merged rather than published twice.
 export async function pollSuggestion(
   suggestionId: string, adminId: string
 ): Promise<{ ok: true; sourceId: string; published: number } | { ok: false; error: string }> {
@@ -445,6 +446,9 @@ export async function pollSuggestion(
       where id = $1`,
     [suggestionId, adminId]
   );
+  // Settle duplicates first, so a copy of an event we already have is merged
+  // into it rather than published a second time.
+  await resolveDuplicates(adminId);
   const published = await query<{ id: string }>(
     `update events e
         set status = 'live'::event_status,

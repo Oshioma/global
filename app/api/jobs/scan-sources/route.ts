@@ -15,6 +15,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { getCurrentMember } from '@/lib/auth';
 import { scanDueSources } from '@/lib/supply/scanner';
 import { purgeFinishedUnpublished } from '@/lib/adminEvents';
+import { resolveDuplicates } from '@/lib/duplicates';
 import { ensurePendingSources } from '@/lib/supply/suggest';
 
 export const maxDuration = 300;
@@ -45,10 +46,13 @@ async function run(req: NextRequest) {
   // after it finished is deleted, so the review queues only hold events
   // somebody could still go to.
   const purgedFinished = await purgeFinishedUnpublished();
+  // And settle what this run flagged as possible duplicates.
+  const duplicates = await resolveDuplicates();
   return NextResponse.json({
     ok: true,
     scanned,
     purgedFinished,
+    duplicates,
     results: results.map((r) => ({
       scanId: r.scanId, status: r.status, method: r.method,
       candidates: r.candidatesFound, new: r.newCandidates,

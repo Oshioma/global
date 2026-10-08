@@ -6,6 +6,7 @@ import { audit } from './audit';
 import { findOrCreateCity } from './locations';
 import { query, queryOne } from './db';
 import { checkForDuplicate } from './dedupe';
+import { resolveDuplicates } from './duplicates';
 import { normalizeTitle, slugify } from './util';
 import { isValidTimezone, parseLocalInTimezone } from './supply/time';
 
@@ -267,8 +268,9 @@ export async function updateEvent(
 //
 // - Only the NEW and NEEDS REVIEW queues can be bulk-published. Rejected is a
 //   decision someone made; it is not undone by a convenience button.
-// - Anything the engine flagged as a possible duplicate is left behind. A
-//   duplicate published in bulk is a mess someone has to unpick by hand.
+// - Possible duplicates are settled first (lib/duplicates.ts): the same
+//   place, date and name is folded into one copy, anything else is cleared to
+//   publish. Anything still flagged after that is left for a person.
 // - Events that have already finished are not published — publishing them
 //   puts nothing in front of anybody. They are DELETED instead (see
 //   purgeFinishedUnpublished), so the queue a press leaves behind is only the
@@ -284,6 +286,7 @@ export type PublishAllResult = {
   published: number;
   skippedDuplicates: number;
   purgedPast: number;
+  mergedDuplicates: number;
   remaining: number;
 };
 
@@ -337,13 +340,17 @@ export async function publishQueue(
   adminId: string
 ): Promise<PublishAllResult> {
   if (state !== 'new' && state !== 'needs_review') {
-    return { published: 0, skippedDuplicates: 0, purgedPast: 0, remaining: 0 };
+    return { published: 0, skippedDuplicates: 0, purgedPast: 0, mergedDuplicates: 0, remaining: 0 };
   }
 
   // Clear out what is already over first, from BOTH queues: pressing the
   // button on one queue and finding the other still full of dead events is
   // the same problem one tab over.
   const purgedPast = await purgeFinishedUnpublished(adminId);
+  // Then settle every possible duplicate: the same event is folded into one
+  // copy, anything else stops being flagged (lib/duplicates.ts). What is left
+  // flagged after this is only what could not be settled.
+  const { merged: mergedDuplicates } = await resolveDuplicates(adminId);
 
   const queue = await query<{ id: string; is_duplicate: boolean }>(
     `select e.id, e.possible_duplicate_of is not null as is_duplicate
@@ -376,6 +383,7 @@ export async function publishQueue(
     published: batch.length,
     skippedDuplicates: queue.filter((e) => e.is_duplicate).length,
     purgedPast,
+    mergedDuplicates,
     remaining: publishable.length - batch.length,
   };
 }

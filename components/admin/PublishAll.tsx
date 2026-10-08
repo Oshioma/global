@@ -3,7 +3,7 @@
 // PUBLISH ALL — at the top of the review queue, where the decision is made.
 //
 // It says what it will do before it does it, and what it left behind after:
-// flagged duplicates are never swept up in a bulk press, and events that have
+// duplicates are merged rather than published twice, and events that have
 // already finished are cleared out of the queues rather than published.
 
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ type Result = {
   published: number;
   skippedDuplicates: number;
   purgedPast: number;
+  mergedDuplicates?: number;
   remaining: number;
   error?: string;
 };
@@ -51,6 +52,9 @@ export function PublishAll({ state, count }: { state: 'new' | 'needs_review'; co
           ? `${plural(result.skippedDuplicates, 'possible duplicate')} left for you to decide.`
           : null,
         result.purgedPast > 0 ? `Cleared out ${plural(result.purgedPast, 'event')} that had already finished.` : null,
+        (result.mergedDuplicates ?? 0) > 0
+          ? `Merged ${plural(result.mergedDuplicates ?? 0, 'duplicate')} into the copy with more information.`
+          : null,
       ].filter(Boolean)
     : [];
 
@@ -59,8 +63,9 @@ export function PublishAll({ state, count }: { state: 'new' | 'needs_review'; co
       <div className="publishAllText">
         <strong>{plural(count, 'event')} waiting</strong>
         <span>
-          Publishing them all skips anything flagged as a possible duplicate, and clears
-          out anything that has already finished.
+          Publishing them all merges duplicates (same place, date and name — the copy with more
+          information is kept), publishes everything else, and clears out anything that has
+          already finished.
         </span>
         {result && !result.error && (
           <span className="publishAllDone">

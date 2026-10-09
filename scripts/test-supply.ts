@@ -45,6 +45,8 @@ import { purgeFinishedUnpublished, publishQueue } from '@/lib/adminEvents';
 import { pollSuggestion, dismissSuggestion } from '@/lib/supply/suggest';
 import { heldForSuggestionSql } from '@/lib/adminEvents';
 import { resolveDuplicates, titlesMatch, localDay } from '@/lib/duplicates';
+import { parseGenres, toggleGenre, genresParam } from '@/lib/genreFilter';
+import { browseEvents } from '@/lib/events';
 import { runMonthlySuggestions, bucketGenres, probePassed, suggestionsEmail, hostOf } from '@/lib/supply/suggest';
 import { fetcherFor, renderingConfigured } from '@/lib/supply/render';
 import { parse } from 'node-html-parser';
@@ -1101,6 +1103,53 @@ async function main() {
     check('a second purge has nothing to do', (await purgeFinishedUnpublished()) === 0);
     void [ok, dup, pastNew, pastReview, pastDup, pastLive, pastRejected, endedToday, onNow];
     await q(`delete from events where slug like 'purge-%'`);
+  }
+
+  // -------------------------------------------------------------------------
+  console.log('\n— choosing several genres on /events —');
+  {
+    check('one genre in an old link is a list of one', parseGenres('house').join() === 'house');
+    check('several genres come from a comma list, deduped and cleaned',
+      parseGenres('house, Jungle,house,<script>').join() === 'house,jungle');
+    check('drum & bass brings jungle with it',
+      toggleGenre([], 'drum-and-bass').join() === 'drum-and-bass,jungle');
+    check('…and adds to what is already chosen',
+      toggleGenre(['house'], 'drum-and-bass').join() === 'house,drum-and-bass,jungle');
+    check('un-choosing drum & bass lets jungle go too',
+      toggleGenre(['house', 'drum-and-bass', 'jungle'], 'drum-and-bass').join() === 'house');
+    check('jungle on its own toggles by itself',
+      toggleGenre(['drum-and-bass', 'jungle'], 'jungle').join() === 'drum-and-bass'
+      && toggleGenre([], 'jungle').join() === 'jungle');
+    check('no genres is no parameter', genresParam([]) === null);
+
+    // The query: any of the chosen genres.
+    const mkLive = async (slug: string, genreSlug: string) => {
+      const id = (await q(
+        `insert into events (slug, title, title_normalized, start_at, timezone, status, city, country, published_at)
+         values ($1, $1, $1, now() + interval '15 days', 'Europe/London', 'live', 'Leeds', 'United Kingdom', now())
+         returning id`, [slug]))[0].id as string;
+      await q(`insert into event_genres (event_id, genre_id, source, confidence)
+               select $1, id, 'manual', 90 from genres where slug = $2`, [id, genreSlug]);
+      return id;
+    };
+    for (const [name, slug] of [['Jungle', 'jungle'], ['Drum & Bass', 'drum-and-bass'], ['House', 'house']]) {
+      await q(`insert into genres (name, slug) values ($1, $2) on conflict do nothing`, [name, slug]);
+    }
+    const jungleNight = await mkLive('genre-jungle-night', 'jungle');
+    const houseNight = await mkLive('genre-house-night', 'house');
+    const ids = async (genreSlugs: string[]) =>
+      (await browseEvents({ tab: 'for-you', genreSlugs, sort: 'soonest' })).map((e) => e.id);
+    const dnb = await ids(toggleGenre([], 'drum-and-bass'));
+    check('choosing drum & bass shows the jungle night', dnb.includes(jungleNight) && !dnb.includes(houseNight));
+    const both = await ids(['house', 'jungle']);
+    check('two genres show both', both.includes(jungleNight) && both.includes(houseNight));
+    const ranked = (await browseEvents({ tab: 'for-you', genreSlugs: ['house', 'jungle'], sort: 'recommended' }))
+      .map((e) => e.id);
+    check('the recommended order works with several genres too',
+      ranked.includes(jungleNight) && ranked.includes(houseNight));
+    const popular = await browseEvents({ tab: 'for-you', sort: 'popular' });
+    check('sorting by anything but recommended does not fail', Array.isArray(popular));
+    await q(`delete from events where slug like 'genre-%-night'`);
   }
 
   // -------------------------------------------------------------------------

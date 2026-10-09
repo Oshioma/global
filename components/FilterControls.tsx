@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { track } from '@/lib/track';
+import { genresParam, parseGenres, withCompanions } from '@/lib/genreFilter';
 
 type GenreOpt = { name: string; slug: string; parent_name: string | null };
 
@@ -84,6 +85,15 @@ export function FilterControls({
     );
   }
 
+  // The chips can select several genres; this select picks one (bringing its
+  // companions, as the chips do). With several on, it says how many.
+  const selectedGenres = parseGenres(current.genre);
+  const genreValue = selectedGenres.length === 1 ? selectedGenres[0] : '';
+  const pickGenre = (slug: string) =>
+    setParams({ genre: slug ? genresParam(withCompanions(slug)) : null });
+  const genreLabel = (fallback: string) =>
+    selectedGenres.length > 1 ? `${selectedGenres.length} genres` : fallback;
+
   const parents = genres.filter((g) => !g.parent_name);
   const children = genres.filter((g) => g.parent_name);
 
@@ -108,12 +118,12 @@ export function FilterControls({
         {cities.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
       <select
-        value={current.genre ?? ''}
-        onChange={(e) => setParams({ genre: e.target.value || null })}
+        value={genreValue}
+        onChange={(e) => pickGenre(e.target.value)}
         className={current.genre ? 'isSet' : ''}
         aria-label="Genre"
       >
-        <option value="">Genre</option>
+        <option value="">{genreLabel('Genre')}</option>
         <optgroup label="Genres">
           {parents.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
         </optgroup>
@@ -195,8 +205,8 @@ export function FilterControls({
             </div>
             <div className="field">
               <label>Genre</label>
-              <select value={current.genre ?? ''} onChange={(e) => setParams({ genre: e.target.value || null })}>
-                <option value="">All genres</option>
+              <select value={genreValue} onChange={(e) => pickGenre(e.target.value)}>
+                <option value="">{genreLabel('All genres')}</option>
                 <optgroup label="Genres">
                   {parents.map((g) => <option key={g.slug} value={g.slug}>{g.name}</option>)}
                 </optgroup>

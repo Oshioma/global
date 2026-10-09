@@ -46,6 +46,8 @@ export type BrowseTab =
 export type BrowseParams = {
   tab: BrowseTab;
   genreSlug?: string | null;
+  // Any of these (each including its subgenres). Combined with genreSlug.
+  genreSlugs?: string[];
   eventType?: string | null;
   city?: string | null;
   dateFrom?: Date | null;
@@ -130,13 +132,15 @@ export async function browseEvents(params: BrowseParams): Promise<EventCard[]> {
     }
   }
 
-  if (params.genreSlug) {
-    // A parent genre includes all of its subgenres.
+  const genreSlugs = [...new Set([...(params.genreSlugs ?? []), ...(params.genreSlug ? [params.genreSlug] : [])])];
+  if (genreSlugs.length) {
+    // ANY of the chosen genres; a parent genre includes all of its subgenres.
+    const slugs = arg(genreSlugs);
     where.push(`exists (
       select 1 from event_genres eg
         join genres g on g.id = eg.genre_id
         left join genres pg on pg.id = g.parent_genre_id
-       where eg.event_id = e.id and (g.slug = ${arg(params.genreSlug)} or pg.slug = ${arg(params.genreSlug)})
+       where eg.event_id = e.id and (g.slug = any(${slugs}::text[]) or pg.slug = any(${slugs}::text[]))
     )`);
   }
   if (params.q) {
@@ -201,8 +205,13 @@ export async function browseEvents(params: BrowseParams): Promise<EventCard[]> {
   // Anyone we cannot place — signed out, or a member who never set a city —
   // is placed in London (lib/proximity): London first, then the rest of the
   // UK, then the world. A UK guide by default.
+  // Both of these only feed the RECOMMENDED order. Built for any other sort,
+  // their parameters were bound but never used — and Postgres refuses a query
+  // that is handed more parameters than it reads, so Soonest, Most Popular and
+  // Recently Added failed outright.
+  const recommended = params.sort === 'recommended';
   let proximityTier = '(select 0)';
-  if (params.tab !== 'travel') {
+  if (recommended && params.tab !== 'travel') {
     proximityTier = proximityTierSql(await placeAnchorsFor(params.member?.id), arg);
   }
 
@@ -210,7 +219,7 @@ export async function browseEvents(params: BrowseParams): Promise<EventCard[]> {
   // explicit-genre affinity for signed-in members (a followed
   // promoter/venue/artist counts double), then soonest.
   let genreAffinity = '(select 0)';
-  if (params.member?.id) {
+  if (recommended && params.member?.id) {
     const memberParam = arg(params.member.id);
     genreAffinity = `(
       (select count(*) from event_genres eg2

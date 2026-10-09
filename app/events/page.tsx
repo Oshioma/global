@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
+import { genresParam, parseGenres, toggleGenre } from '@/lib/genreFilter';
 import { getCurrentMember } from '@/lib/auth';
 import { isActiveMember } from '@/lib/membership';
 import {
@@ -65,7 +66,9 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   const guestlistMember = member ? await isActiveMember(member.id) : false;
 
   const tab = (TABS.some((t) => t.key === one(sp.tab)) ? one(sp.tab) : 'for-you') as BrowseTab;
-  const genre = one(sp.genre) || null;
+  // One genre or several (?genre=house,jungle) — see lib/genreFilter.
+  const selectedGenres = parseGenres(sp.genre);
+  const genre = genresParam(selectedGenres);
   const eventType = one(sp.type) || null;
   const city = one(sp.city) || null;
   const datePreset = one(sp.date) || undefined;
@@ -90,7 +93,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   const [events, genres, cities] = await Promise.all([
     browseEvents({
       tab,
-      genreSlug: genre,
+      genreSlugs: selectedGenres,
       eventType,
       city,
       dateFrom: from,
@@ -193,15 +196,21 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           <Link href={buildQS({ genre: null })} className={`chip${!genre ? ' active' : ''}`}>
             All
           </Link>
-          {visibleGenres.map((g) => (
-            <Link
-              key={g.slug}
-              href={buildQS({ genre: g.slug === genre ? null : g.slug })}
-              className={`chip${genre === g.slug ? ' active' : ''}`}
-            >
-              {g.name}
-            </Link>
-          ))}
+          {/* Each chip toggles: pick as many as you like. Drum & bass brings
+              jungle with it (lib/genreFilter). */}
+          {visibleGenres.map((g) => {
+            const on = selectedGenres.includes(g.slug);
+            return (
+              <Link
+                key={g.slug}
+                href={buildQS({ genre: genresParam(toggleGenre(selectedGenres, g.slug)) })}
+                className={`chip${on ? ' active' : ''}`}
+                aria-pressed={on}
+              >
+                {g.name}
+              </Link>
+            );
+          })}
           {!showAllGenres && moreGenres.length > 0 && (
             <Link href={buildQS({ more: '1' })} className="chip">
               More +
